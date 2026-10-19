@@ -11,6 +11,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test test/
+      - run: node --test test/engine.test.js
       - run: node scripts/build.js
       - run: git diff --exit-code -- index.html || (echo "index.html is out of date; run npm run build" && exit 1)

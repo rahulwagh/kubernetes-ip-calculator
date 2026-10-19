@@ -7,7 +7,7 @@
   "homepage": "https://jhooq.com/tools/kubernetes-ip-calculator/",
   "repository": { "type": "git", "url": "https://github.com/rahulwagh/kubernetes-ip-calculator.git" },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/engine.test.js",
     "build": "node scripts/build.js",
     "data": "node scripts/build-eks-data.js"
   }

@@ -40,7 +40,7 @@ index.html                the built page, what jhooq.com serves
 ```
 
 ```bash
-npm test          # 16 tests: EKS max-pods values, GKE table and 900-node example, AKS 1,581-address example ...
+npm test          # node --test test/engine.test.js, 16 tests: EKS max-pods values, GKE table and 900-node example, AKS 1,581-address example ...
 npm run build     # src/index.template.html + engine.js + data -> index.html
 ./scripts/update-eks-data.sh   # refresh the EC2 table when AWS adds instance types
 ```
