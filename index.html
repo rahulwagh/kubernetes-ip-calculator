@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubernetes IP Calculator - EKS, GKE and AKS subnet, pod and node IP sizing | jhooq.com</title>
+<meta name="description" content="Free Kubernetes IP address calculator for Amazon EKS, Google GKE and Azure AKS. Pick the instance type or pods per node, the node count and the zones; get max pods per node, the VPC addresses every node takes, the subnet size per zone and the pod and service ranges, from the rules each cloud publishes. Runs in your browser.">
+<link rel="canonical" href="https://jhooq.com/tools/kubernetes-ip-calculator/">
+<meta property="og:title" content="Kubernetes IP Calculator - jhooq.com">
+<meta property="og:description" content="How many IP addresses does your EKS, GKE or AKS cluster really need? Max pods per node, addresses per node, subnet per zone, pod and service ranges. Free, runs in the browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jhooq.com/tools/kubernetes-ip-calculator/">
+<meta property="og:image" content="https://jhooq.com/tools/kubernetes-ip-calculator/og.png">
+<link rel="icon" href="/icons/favicon-32x32.png">
+<!-- same analytics tag as the rest of jhooq.com (standalone page, so it is added explicitly) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-133303547-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-133303547-1');
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var label = b.id || (b.dataset && (b.dataset.v || b.dataset.preset)) || (b.textContent || '').trim().slice(0, 40);
+    gtag('event', 'k8sip_click', { k8sip_action: label, k8sip_cloud: (window.S && S.cloud) || '' });
+  });
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Kubernetes IP Calculator","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://jhooq.com/tools/kubernetes-ip-calculator/","author":{"@type":"Person","name":"Rahul Wagh","url":"https://jhooq.com/about/"},"description":"Calculates max pods per node, VPC addresses per node, subnet size per zone and pod and service ranges for Amazon EKS, Google GKE and Azure AKS."}
+</script>
+<style>
+:root{
+  --bg:#f5f7fb;--paper:#ffffff;--ink:#1a2030;--text:#2b3346;--muted:#5d667a;--line:#dfe4ee;--haze:#eef1f7;
+  --blue:#3f6fd8;--violet:#7c4ddb;--green:#1d9a6c;--amber:#d98a0b;--red:#d9414f;--cyan:#0e9aa7;--pink:#d6409f;
+  --code:#0d1220;--code-ink:#e6e9f2;--shadow:0 10px 30px rgba(26,32,48,.08);--radius:14px;
+}
+html[data-theme="dark"]{
+  --bg:#0b0f17;--paper:#131826;--ink:#e6e9f2;--text:#d7dbe6;--muted:#9aa3b8;--line:#252c40;--haze:#1a2030;
+  --blue:#5b8def;--violet:#8b5cf6;--green:#34c38f;--amber:#f0a92c;--red:#ef5b68;--cyan:#22b8c6;--pink:#e75cb3;
+  --code:#0b0f17;--code-ink:#e6e9f2;--shadow:0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+h1,h2,h3,.brand{font-family:"Chakra Petch",Inter,sans-serif;letter-spacing:.2px;color:var(--ink);margin:0}
+code,pre,.mono{font-family:"JetBrains Mono",Consolas,Menlo,monospace}
+a{color:var(--blue)}
+button,select,input,textarea{font:inherit;color:inherit}
+.wrap{max-width:1440px;margin:0 auto;padding:0 20px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;font-size:1.05rem}
+.brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--violet));display:grid;place-items:center;color:#fff;font-weight:700;font-size:.9rem}
+.top .actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600;font-size:.86rem;display:inline-flex;align-items:center;gap:6px;transition:.15s;text-decoration:none}
+.btn:hover{border-color:var(--blue);color:var(--blue)}
+.btn.primary{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;border:0}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn.on{background:var(--haze);border-color:var(--blue);color:var(--blue)}
+.btn.small{padding:5px 9px;font-size:.78rem;border-radius:8px}
+.hero{padding:26px 0 10px}
+.hero h1{font-size:clamp(1.5rem,3vw,2.3rem);line-height:1.15}
+.hero p{margin:8px 0 0;color:var(--muted);max-width:860px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.badge{font-size:.76rem;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--haze);color:var(--muted);border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:400px 1fr;gap:20px;padding:18px 0 40px}
+@media (max-width:1000px){.grid{grid-template-columns:1fr}}
+.grid>*{min-width:0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card>.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.card>.hd h2{font-size:1.02rem}
+.card>.bd{padding:16px 18px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:600;font-size:.85rem;color:var(--ink)}
+.field .hint,.hint{font-size:.78rem;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=text],input[type=number],select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;outline:none;transition:.15s}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 20%,transparent)}
+input.bad{border-color:var(--red)}
+.seg{display:inline-flex;background:var(--haze);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:6px 11px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.84rem;color:var(--muted)}
+.seg button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.clouds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.clouds button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);cursor:pointer;transition:.15s}
+.clouds button:hover{border-color:var(--blue)}
+.clouds button.on{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%,var(--paper));box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 18%,transparent)}
+.clouds b{color:var(--ink);font-size:.92rem}
+.clouds small{color:var(--muted);font-size:.72rem;line-height:1.3}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px dashed var(--line);background:transparent;padding:5px 9px;border-radius:999px;font-size:.78rem;cursor:pointer;color:var(--muted)}
+.chip:hover,.chip.on{border-color:var(--blue);color:var(--blue)}
+.switch{display:flex;align-items:center;gap:10px;font-size:.86rem;cursor:pointer;user-select:none}
+.switch input{appearance:none;width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:.2s;margin:0;flex-shrink:0}
+.switch input:checked{background:var(--blue)}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.switch input:checked::after{left:19px}
+[data-only]{display:none}
+body[data-cloud="eks"] [data-only~="eks"],body[data-cloud="gke"] [data-only~="gke"],body[data-cloud="aks"] [data-only~="aks"]{display:flex}
+body[data-cloud="eks"] div.two[data-only~="eks"],body[data-cloud="gke"] div.two[data-only~="gke"],body[data-cloud="aks"] div.two[data-only~="aks"]{display:grid}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpi .v{font-family:"Chakra Petch";font-weight:700;font-size:1.3rem;color:var(--ink)}
+.kpi .l{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.kpi .s{font-size:.74rem;color:var(--muted)}
+.bar{display:flex;height:34px;border-radius:9px;overflow:hidden;border:1px solid var(--line);background:var(--haze)}
+.bar span{display:grid;place-items:center;font-size:.72rem;font-weight:700;color:#fff;min-width:0;overflow:hidden;white-space:nowrap;padding:0 4px}
+.bar .pods{background:var(--blue)}.bar .warm{background:var(--amber)}.bar .prim{background:var(--violet)}.bar .free{background:transparent;color:var(--muted)}.bar .cp{background:var(--cyan)}.bar .nodes{background:var(--green)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.formula{font-family:"JetBrains Mono",monospace;font-size:.8rem;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;overflow:auto;white-space:pre-wrap}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600}
+td b{color:var(--ink)}
+.tblwrap{overflow:auto}
+.check{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.86rem}
+.check:last-child{border-bottom:0}
+.check .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:800;flex-shrink:0;color:#fff}
+.check.ok .ic{background:var(--green)}.check.warn .ic{background:var(--amber)}.check.bad .ic{background:var(--red)}.check.info .ic{background:var(--blue)}
+.check b{color:var(--ink)}
+.check small{display:block;color:var(--muted)}
+.check small a{font-size:.76rem}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 18px}
+.tabs button{border:0;background:transparent;padding:10px 12px;cursor:pointer;font-weight:600;font-size:.84rem;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--blue);border-bottom-color:var(--blue)}
+pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px;border-radius:0 0 var(--radius) var(--radius);overflow:auto;font-size:.8rem;line-height:1.5;max-height:520px}
+.exbar{display:flex;gap:8px;justify-content:flex-end;padding:10px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.foot{border-top:1px solid var(--line);padding:18px 0 40px;color:var(--muted);font-size:.82rem}
+.foot a{margin-right:14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:.84rem;opacity:0;transition:.25s;pointer-events:none;z-index:60}
+.toast.show{opacity:1}
+.src{font-size:.76rem;color:var(--muted)}
+.about p{max-width:900px}
+@media (max-width:640px){.clouds{grid-template-columns:1fr}.two{grid-template-columns:1fr}}
+@media print{.top .actions,.exbar,.tabs,.foot,.btn,.presets{display:none!important}.grid{grid-template-columns:1fr}body{background:#fff}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body data-cloud="eks">
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="https://jhooq.com/"><span class="mark">J</span> jhooq.com <span style="color:var(--muted);font-weight:500">/ tools</span></a>
+    <div class="actions">
+      <button class="btn" id="shareBtn" title="Copy a link that reproduces this exact calculation">🔗 Copy link</button>
+      <button class="btn" id="printBtn" title="Print or save as PDF">🖨 Print</button>
+      <button class="btn" id="themeBtn" title="Switch light / dark">🌙</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>Kubernetes IP Calculator</h1>
+    <p>How many IP addresses does your EKS, GKE or AKS cluster really need? Pick the cloud, the instance type or the pods per node, the node count and the zones. You get the maximum pods per node, the VPC addresses every node takes, the subnet size per zone and the pod and service ranges, computed from the rules each provider publishes and linked to them. Nothing leaves your browser.</p>
+    <div class="badges">
+      <span class="badge">EKS ENI and prefix delegation maths</span><span class="badge">GKE node Pod ranges</span><span class="badge">AKS Overlay, Pod Subnet, legacy CNI</span><span class="badge">1404 EC2 instance types</span><span class="badge">Opens in the VPC Subnet Planner</span><span class="badge">Terraform and CLI snippets</span><span class="badge">No upload, no sign-up</span>
+    </div>
+  </section>
+
+  <div class="grid">
+    <aside class="stack">
+      <div class="card">
+        <div class="hd"><h2>1. Cluster</h2></div>
+        <div class="bd stack">
+          <div class="clouds" id="cloudSeg">
+            <button data-v="eks"><b>Amazon EKS</b><small>VPC CNI: pods take VPC addresses</small></button>
+            <button data-v="gke"><b>Google GKE</b><small>VPC-native: alias range per node</small></button>
+            <button data-v="aks"><b>Azure AKS</b><small>Overlay, Pod Subnet or legacy CNI</small></button>
+          </div>
+          <div class="field"><label>Start from a common case</label>
+            <div class="presets" id="presets"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><h2>2. Nodes and pods</h2></div>
+        <div class="bd stack">
+          <!-- EKS -->
+          <div class="field" data-only="eks"><label for="inst">Instance type</label>
+            <input type="text" id="inst" list="instList" value="m5.large" autocomplete="off" spellcheck="false" placeholder="m5.large">
+            <datalist id="instList"></datalist>
+            <div class="presets" id="instQuick"></div>
+            <span class="hint" id="instHint"></span>
+          </div>
+          <div class="two" data-only="eks">
+            <div class="field"><label for="nodesAz">Nodes per zone</label><input type="number" id="nodesAz" min="1" max="5000" value="5"></div>
+            <div class="field"><label>Availability Zones</label><div class="seg" id="azSeg"><button data-v="2">2</button><button data-v="3" class="on">3</button><button data-v="4">4</button></div></div>
+          </div>
+          <div class="two" data-only="eks">
+            <div class="field"><label for="podsEks">Pods per node</label><input type="number" id="podsEks" min="1" max="250" placeholder="max for this type"><span class="hint">Blank = the maximum this type allows</span></div>
+            <div class="field"><label for="cpIps">Control-plane IPs per subnet</label><select id="cpIps"><option value="16" selected>16 (recommended)</option><option value="6">6 (minimum)</option></select></div>
+          </div>
+          <label class="switch" data-only="eks"><input type="checkbox" id="prefixSw"> Prefix delegation (/28 prefixes per ENI slot)</label>
+          <label class="switch" data-only="eks"><input type="checkbox" id="managedSw" checked> Managed node group (maxPods capped at 110 or 250)</label>
+
+          <!-- GKE -->
+          <div class="field" data-only="gke"><label>Cluster mode</label><div class="seg" id="gkeMode"><button data-v="standard" class="on">Standard</button><button data-v="autopilot">Autopilot</button></div><span class="hint">Autopilot fixes 32 Pods per node.</span></div>
+          <div class="two" data-only="gke">
+            <div class="field"><label for="nodesGke">Nodes (whole cluster)</label><input type="number" id="nodesGke" min="1" max="15000" value="30"></div>
+            <div class="field"><label for="podsGke">Max Pods per node</label><input type="number" id="podsGke" min="8" max="256" value="110"><span class="hint">8 to 256, default 110</span></div>
+          </div>
+          <label class="switch" data-only="gke"><input type="checkbox" id="svcManaged" checked> Services from the GKE-managed range (34.118.224.0/20)</label>
+          <div class="field" data-only="gke" id="svcPrefixField"><label for="svcPrefix">Services secondary range</label><select id="svcPrefix"><option value="24">/24 (256 Services)</option><option value="22">/22 (1,024)</option><option value="20" selected>/20 (4,096, default)</option><option value="18">/18 (16,384)</option><option value="16">/16 (65,536)</option></select></div>
+
+          <!-- AKS -->
+          <div class="field" data-only="aks"><label for="aksMode">Network plugin</label>
+            <select id="aksMode">
+              <option value="overlay" selected>Azure CNI Overlay (default for new clusters)</option>
+              <option value="podsubnet">Azure CNI Pod Subnet (dynamic IP allocation)</option>
+              <option value="nodesubnet">Azure CNI node subnet (legacy, every pod takes a VNet IP)</option>
+              <option value="kubenet">kubenet</option>
+            </select></div>
+          <div class="two" data-only="aks">
+            <div class="field"><label for="nodesAks">Nodes (whole cluster)</label><input type="number" id="nodesAks" min="1" max="5000" value="20"></div>
+            <div class="field"><label for="podsAks">Max pods per node</label><input type="number" id="podsAks" min="10" max="250" placeholder="plugin default"><span class="hint" id="aksPodsHint"></span></div>
+          </div>
+
+          <!-- shared -->
+          <div class="two">
+            <div class="field" data-only="gke aks" style="display:flex"><label for="surge">Surge nodes during upgrade</label><input type="number" id="surge" min="0" max="500" value="1"><span class="hint">AKS default max surge is 1 node; GKE default is 1.</span></div>
+            <div class="field"><label for="growth">Growth headroom</label><div class="row"><input type="number" id="growth" min="0" max="400" value="0" style="width:110px"><span>%</span></div><span class="hint">Added to the node count before sizing.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" data-only="eks" style="display:block">
+        <div class="hd"><h2>3. Service CIDR check</h2></div>
+        <div class="bd stack">
+          <div class="field"><label for="svcCidr">Kubernetes service CIDR</label><input type="text" id="svcCidr" value="172.20.0.0/16" class="mono" spellcheck="false"><span class="hint">EKS default is 10.100.0.0/16 or 172.20.0.0/16. Must be /12 to /24 inside a private range and must not overlap the VPC.</span></div>
+          <div class="field"><label for="vpcCidrs">VPC CIDRs (one per line)</label><textarea id="vpcCidrs" rows="2" class="mono" spellcheck="false">10.0.0.0/16</textarea></div>
+          <div id="svcOut"></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="stack">
+      <div class="card">
+        <div class="hd"><h2 id="resTitle">Result</h2><span class="hint" id="resNote"></span></div>
+        <div class="bd">
+          <div class="kpis" id="kpis"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><h2>Where the addresses go</h2><span class="hint" id="barNote"></span></div>
+        <div class="bd">
+          <div class="bar" id="bar"></div>
+          <div class="legend" id="legend"></div>
+          <div class="formula" id="formula"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><h2>Ranges to create</h2><button class="btn small primary" id="plannerBtn" title="Open the VPC Subnet Planner with these subnets pre-loaded">Open in VPC Subnet Planner →</button></div>
+        <div class="bd tblwrap"><table id="ranges"><thead></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><h2>Checks</h2></div>
+        <div class="bd" id="checks"></div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><h2>Take it with you</h2></div>
+        <div class="tabs" id="tabs"><button data-v="tf" class="on">Terraform</button><button data-v="cli">CLI</button><button data-v="md">Markdown</button></div>
+        <div class="exbar"><button class="btn small" id="copyCode">Copy</button></div>
+        <pre class="code" id="code"></pre>
+      </div>
+    </main>
+  </div>
+
+  <section class="card about" id="about" style="margin-bottom:20px">
+    <div class="hd"><h2>How the calculator works</h2></div>
+    <div class="bd" style="max-width:980px">
+      <p>Each cloud hands out pod addresses differently, so the same "50 nodes" costs a different amount of address space on each. The calculator applies the published rule for the cloud you pick, shows the arithmetic, and links every rule to the page it came from. The EKS instance table (ENIs and IPv4 addresses per ENI for <b>1404</b> instance types) is generated from the file the EKS AMI itself uses, commit <code>8254d71</code> of <b>2026-09-28</b>.</p>
+
+      <h3 style="margin-top:18px;font-size:1rem">The rules, per cloud</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Cloud and mode</th><th>Max pods per node</th><th>What a node takes from your network</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>EKS, VPC CNI secondary IPs</td><td>ENIs × (IPs per ENI − 1) + 2; managed node groups cap at 110 (under 30 vCPU) or 250</td><td>Every attached ENI has all its addresses allocated. With the default WARM_ENI_TARGET of 1 a node holds one spare ENI, so m5.large (3 × 10) takes up to 30 VPC addresses for 29 pods.</td><td><a href="https://docs.aws.amazon.com/eks/latest/userguide/choosing-instance-type.html" rel="noopener">EKS instance types</a>, <a href="https://github.com/aws/amazon-vpc-cni-k8s/blob/master/README.md" rel="noopener">VPC CNI README</a></td></tr>
+          <tr><td>EKS, prefix delegation</td><td>ENI slots × 16 + 2, capped at 110 or 250</td><td>Each ENI slot holds a /28 prefix (16 addresses) instead of one address; the node takes prefixes × 16 plus one primary address per ENI. Prefixes need contiguous, aligned free blocks.</td><td><a href="https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-linux.html" rel="noopener">EKS prefix mode</a></td></tr>
+          <tr><td>EKS, cluster subnets</td><td>-</td><td>At least 6 free addresses per subnet for the control plane (16 recommended), in at least two Availability Zones. Service CIDR /12 to /24 inside a private range, not overlapping the VPC.</td><td><a href="https://docs.aws.amazon.com/eks/latest/userguide/network-reqs.html" rel="noopener">EKS network requirements</a></td></tr>
+          <tr><td>GKE, VPC-native</td><td>8 to 256 (default 110; Autopilot 32)</td><td>Each node gets an alias range of /(31 − ⌈log₂ pods⌉): /24 for 110 pods, /28 for 8. The Pod secondary range must hold one block per node and a node pool range is at least /24. Nodes take one primary address each; the primary range reserves 4.</td><td><a href="https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr" rel="noopener">GKE max Pods per node</a>, <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/alias-ips" rel="noopener">VPC-native clusters</a></td></tr>
+          <tr><td>AKS, Azure CNI Overlay</td><td>default 250, max 250</td><td>Nodes take one VNet address each (plus surge). Pods come from a private pod CIDR, a /24 per node; the default 10.244.0.0/16 holds 256 nodes.</td><td><a href="https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning" rel="noopener">AKS IP planning</a></td></tr>
+          <tr><td>AKS, Azure CNI Pod Subnet</td><td>default 110, max 250</td><td>Nodes in the node subnet, pods in a separate VNet pod subnet. Addresses go to nodes in batches of 16, the next batch when fewer than 8 remain. Pod subnets up to /16.</td><td><a href="https://learn.microsoft.com/en-us/azure/aks/configure-azure-cni-dynamic-ip-allocation" rel="noopener">AKS dynamic IP allocation</a></td></tr>
+          <tr><td>AKS, Azure CNI node subnet (legacy)</td><td>default 30, max 250</td><td>(nodes + surge) + (nodes + surge) × maxPods VNet addresses, assigned up front whether pods run or not. 50 nodes × 30 pods = 1,581 addresses, a /21.</td><td><a href="https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning" rel="noopener">AKS IP planning</a></td></tr>
+          <tr><td>Reserved addresses</td><td>-</td><td>AWS and Azure reserve 5 addresses per subnet, Google Cloud 4. Smallest subnet: /28 on AWS, /29 on Azure and Google Cloud.</td><td><a href="https://jhooq.com/usable-ip-addresses-subnet-aws-azure-gcp/">Usable IPs per subnet</a></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 style="margin-top:18px;font-size:1rem">What it does not do</h3>
+      <p>It does not model Windows nodes, IPv6 clusters, EKS custom networking with secondary CIDRs, security groups for pods (branch ENIs), GKE multi-Pod CIDR, or AKS static block allocation. Those change the arithmetic; the per-cloud sources above describe each one. The numbers are planning maximums: real clusters also lose addresses to load balancers, endpoints and node replacements.</p>
+
+      <h3 style="margin-top:18px;font-size:1rem">Frequently asked questions</h3>
+      <div id="faq">
+        <p><b>How many pods can run on an m5.large in EKS?</b><br>29 with the default VPC CNI: 3 ENIs × (10 IPs − 1) + 2. With prefix delegation the formula gives 434, and the managed node group cap of 110 applies.</p>
+        <p><b>How many IP addresses does an EKS node consume?</b><br>Up to ENIs × IPs per ENI in secondary-IP mode, because the CNI allocates every address of an attached ENI and keeps a spare ENI warm by default. An m5.large can hold 30 VPC addresses; set WARM_IP_TARGET and MINIMUM_IP_TARGET to shrink the warm pool.</p>
+        <p><b>Why is my EKS subnet out of IP addresses with only 10 nodes?</b><br>Because pods, not nodes, take the addresses. Ten m5.2xlarge nodes at 58 pods each can hold 600 addresses, and a /23 has 507 usable. Use a /19 per zone, or turn on prefix delegation.</p>
+        <p><b>How big should the GKE Pod range be?</b><br>One block of /(31 − ⌈log₂ pods per node⌉) per node: 110 pods per node is a /24 per node, so 900 nodes need a /14 secondary range. Reduce max Pods per node to shrink it.</p>
+        <p><b>Which AKS network plugin uses the fewest VNet addresses?</b><br>Azure CNI Overlay: one VNet address per node, pods from a private CIDR. Legacy Azure CNI pre-assigns maxPods addresses per node, so 50 nodes at the default 30 pods take 1,581 VNet addresses.</p>
+        <p><b>Does the calculator upload anything?</b><br>No. The page runs entirely in your browser; the share link stores the inputs in the URL fragment, which browsers do not send to the server.</p>
+      </div>
+    </div>
+  </section>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+   {"@type":"Question","name":"How many pods can run on an m5.large in EKS?","acceptedAnswer":{"@type":"Answer","text":"29 with the default VPC CNI: 3 ENIs x (10 IPs - 1) + 2. With prefix delegation the formula gives 434, and the managed node group cap of 110 applies."}},
+   {"@type":"Question","name":"How many IP addresses does an EKS node consume?","acceptedAnswer":{"@type":"Answer","text":"Up to ENIs x IPs per ENI in secondary-IP mode, because the VPC CNI allocates every address of an attached ENI and keeps a spare ENI warm by default. An m5.large can hold 30 VPC addresses; WARM_IP_TARGET and MINIMUM_IP_TARGET shrink the warm pool."}},
+   {"@type":"Question","name":"Why is my EKS subnet out of IP addresses with only 10 nodes?","acceptedAnswer":{"@type":"Answer","text":"Pods, not nodes, take the addresses. Ten m5.2xlarge nodes at 58 pods each can hold 600 addresses while a /23 has 507 usable. Use a /19 per zone or turn on prefix delegation."}},
+   {"@type":"Question","name":"How big should the GKE Pod range be?","acceptedAnswer":{"@type":"Answer","text":"One block of /(31 - ceil(log2(pods per node))) per node: 110 pods per node is a /24 per node, so 900 nodes need a /14 secondary range."}},
+   {"@type":"Question","name":"Which AKS network plugin uses the fewest VNet addresses?","acceptedAnswer":{"@type":"Answer","text":"Azure CNI Overlay: one VNet address per node, pods from a private CIDR. Legacy Azure CNI pre-assigns maxPods addresses per node, so 50 nodes at the default 30 pods take 1,581 VNet addresses."}},
+   {"@type":"Question","name":"Does the calculator upload anything?","acceptedAnswer":{"@type":"Answer","text":"No. The page runs entirely in the browser; the share link stores the inputs in the URL fragment, which browsers do not send to the server."}}
+  ]}
+  </script>
+
+  <footer class="foot">
+    <a href="https://jhooq.com/tools/vpc-subnet-planner/">VPC Subnet Planner</a>
+    <a href="https://jhooq.com/usable-ip-addresses-subnet-aws-azure-gcp/">Usable IPs per subnet</a>
+    <a href="https://jhooq.com/what-is-cidr-classless-inter-domain-routing/">What is CIDR?</a>
+    <a href="https://jhooq.com/kubernetes-index/">Kubernetes tutorials</a>
+    <a href="https://www.youtube.com/@RahulWagh">YouTube</a>
+    <div style="margin-top:10px">Built by <a href="https://jhooq.com/about/">Rahul Wagh</a>. Rules follow the current EKS, GKE and AKS documentation linked above; the EKS instance table is regenerated from the EKS AMI repository. Your inputs stay in this tab; the share link encodes them in the URL. Source on <a href="https://github.com/rahulwagh/kubernetes-ip-calculator">GitHub</a>.</div>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script id="eksData" type="application/json">{"meta":{"source":"https://github.com/awslabs/amazon-eks-ami/blob/main/nodeadm/internal/kubelet/instance-info.jsonl","commit":"8254d71","commitDate":"2026-09-28","generated":"2026-10-19","fields":["defaultMaxENIs","ipv4AddressesPerInterface","vcpus","physicalMemoryMib"],"count":1404},"instances":{"a1.2xlarge":[4,15,8,16384],"a1.4xlarge":[8,30,16,32768],"a1.large":[3,10,2,4096],"a1.medium":[2,4,1,2048],"a1.metal":[8,30,16,32768],"a1.xlarge":[4,15,4,8192],"bmn-sf1.metal":[15,50,0,0],"c1.medium":[2,6,2,1740],"c1.xlarge":[4,15,8,7168],"c3.2xlarge":[4,15,8,15360],"c3.4xlarge":[8,30,16,30720],"c3.8xlarge":[8,30,32,61440],"c3.large":[3,10,2,3840],"c3.xlarge":[4,15,4,7680],"c4.2xlarge":[4,15,8,15360],"c4.4xlarge":[8,30,16,30720],"c4.8xlarge":[8,30,36,61440],"c4.large":[3,10,2,3840],"c4.xlarge":[4,15,4,7680],"c5.12xlarge":[8,30,48,98304],"c5.18xlarge":[15,50,72,147456],"c5.24xlarge":[15,50,96,196608],"c5.2xlarge":[4,15,8,16384],"c5.4xlarge":[8,30,16,32768],"c5.9xlarge":[8,30,36,73728],"c5.large":[3,10,2,4096],"c5.metal":[15,50,96,196608],"c5.xlarge":[4,15,4,8192],"c5a.12xlarge":[8,30,48,98304],"c5a.16xlarge":[15,50,64,131072],"c5a.24xlarge":[15,50,96,196608],"c5a.2xlarge":[4,15,8,16384],"c5a.4xlarge":[8,30,16,32768],"c5a.8xlarge":[8,30,32,65536],"c5a.large":[3,10,2,4096],"c5a.metal":[15,50,0,0],"c5a.xlarge":[4,15,4,8192],"c5ad.12xlarge":[8,30,48,98304],"c5ad.16xlarge":[15,50,64,131072],"c5ad.24xlarge":[15,50,96,196608],"c5ad.2xlarge":[4,15,8,16384],"c5ad.4xlarge":[8,30,16,32768],"c5ad.8xlarge":[8,30,32,65536],"c5ad.large":[3,10,2,4096],"c5ad.metal":[15,50,0,0],"c5ad.xlarge":[4,15,4,8192],"c5d.12xlarge":[8,30,48,98304],"c5d.18xlarge":[15,50,72,147456],"c5d.24xlarge":[15,50,96,196608],"c5d.2xlarge":[4,15,8,16384],"c5d.4xlarge":[8,30,16,32768],"c5d.9xlarge":[8,30,36,73728],"c5d.large":[3,10,2,4096],"c5d.metal":[15,50,96,196608],"c5d.xlarge":[4,15,4,8192],"c5n.18xlarge":[15,50,72,196608],"c5n.2xlarge":[4,15,8,21504],"c5n.4xlarge":[8,30,16,43008],"c5n.9xlarge":[8,30,36,98304],"c5n.large":[3,10,2,5376],"c5n.metal":[15,50,72,196608],"c5n.xlarge":[4,15,4,10752],"c6a.12xlarge":[8,30,48,98304],"c6a.16xlarge":[15,50,64,131072],"c6a.24xlarge":[15,50,96,196608],"c6a.2xlarge":[4,15,8,16384],"c6a.32xlarge":[15,50,128,262144],"c6a.48xlarge":[15,50,192,393216],"c6a.4xlarge":[8,30,16,32768],"c6a.8xlarge":[8,30,32,65536],"c6a.large":[3,10,2,4096],"c6a.metal":[15,50,192,393216],"c6a.xlarge":[4,15,4,8192],"c6g.12xlarge":[8,30,48,98304],"c6g.16xlarge":[15,50,64,131072],"c6g.2xlarge":[4,15,8,16384],"c6g.4xlarge":[8,30,16,32768],"c6g.8xlarge":[8,30,32,65536],"c6g.large":[3,10,2,4096],"c6g.medium":[2,4,1,2048],"c6g.metal":[15,50,64,131072],"c6g.xlarge":[4,15,4,8192],"c6gd.12xlarge":[8,30,48,98304],"c6gd.16xlarge":[15,50,64,131072],"c6gd.2xlarge":[4,15,8,16384],"c6gd.4xlarge":[8,30,16,32768],"c6gd.8xlarge":[8,30,32,65536],"c6gd.large":[3,10,2,4096],"c6gd.medium":[2,4,1,2048],"c6gd.metal":[15,50,64,131072],"c6gd.xlarge":[4,15,4,8192],"c6gn.12xlarge":[8,30,48,98304],"c6gn.16xlarge":[15,50,64,131072],"c6gn.2xlarge":[4,15,8,16384],"c6gn.4xlarge":[8,30,16,32768],"c6gn.8xlarge":[8,30,32,65536],"c6gn.large":[3,10,2,4096],"c6gn.medium":[2,4,1,2048],"c6gn.xlarge":[4,15,4,8192],"c6i.12xlarge":[8,30,48,98304],"c6i.16xlarge":[15,50,64,131072],"c6i.24xlarge":[15,50,96,196608],"c6i.2xlarge":[4,15,8,16384],"c6i.32xlarge":[15,50,128,262144],"c6i.4xlarge":[8,30,16,32768],"c6i.8xlarge":[8,30,32,65536],"c6i.large":[3,10,2,4096],"c6i.metal":[15,50,128,262144],"c6i.xlarge":[4,15,4,8192],"c6id.12xlarge":[8,30,48,98304],"c6id.16xlarge":[15,50,64,131072],"c6id.24xlarge":[15,50,96,196608],"c6id.2xlarge":[4,15,8,16384],"c6id.32xlarge":[15,50,128,262144],"c6id.4xlarge":[8,30,16,32768],"c6id.8xlarge":[8,30,32,65536],"c6id.large":[3,10,2,4096],"c6id.metal":[15,50,128,262144],"c6id.xlarge":[4,15,4,8192],"c6in.12xlarge":[8,30,48,98304],"c6in.16xlarge":[15,50,64,131072],"c6in.24xlarge":[15,50,96,196608],"c6in.2xlarge":[4,15,8,16384],"c6in.32xlarge":[8,50,128,262144],"c6in.4xlarge":[8,30,16,32768],"c6in.8xlarge":[8,30,32,65536],"c6in.large":[3,10,2,4096],"c6in.metal":[8,50,128,262144],"c6in.xlarge":[4,15,4,8192],"c7a.12xlarge":[8,30,48,98304],"c7a.16xlarge":[15,50,64,131072],"c7a.24xlarge":[15,50,96,196608],"c7a.2xlarge":[4,15,8,16384],"c7a.32xlarge":[15,50,128,262144],"c7a.48xlarge":[15,50,192,393216],"c7a.4xlarge":[8,30,16,32768],"c7a.8xlarge":[8,30,32,65536],"c7a.large":[3,10,2,4096],"c7a.medium":[2,4,1,2048],"c7a.metal-48xl":[15,50,192,393216],"c7a.xlarge":[4,15,4,8192],"c7g.12xlarge":[8,30,48,98304],"c7g.16xlarge":[15,50,64,131072],"c7g.2xlarge":[4,15,8,16384],"c7g.4xlarge":[8,30,16,32768],"c7g.8xlarge":[8,30,32,65536],"c7g.large":[3,10,2,4096],"c7g.medium":[2,4,1,2048],"c7g.metal":[15,50,64,131072],"c7g.xlarge":[4,15,4,8192],"c7gd.12xlarge":[8,30,48,98304],"c7gd.16xlarge":[15,50,64,131072],"c7gd.2xlarge":[4,15,8,16384],"c7gd.4xlarge":[8,30,16,32768],"c7gd.8xlarge":[8,30,32,65536],"c7gd.large":[3,10,2,4096],"c7gd.medium":[2,4,1,2048],"c7gd.metal":[15,50,64,131072],"c7gd.xlarge":[4,15,4,8192],"c7gn.12xlarge":[8,30,48,98304],"c7gn.16xlarge":[15,50,64,131072],"c7gn.2xlarge":[4,15,8,16384],"c7gn.4xlarge":[8,30,16,32768],"c7gn.8xlarge":[8,30,32,65536],"c7gn.large":[3,10,2,4096],"c7gn.medium":[2,4,1,2048],"c7gn.metal":[15,50,64,131072],"c7gn.xlarge":[4,15,4,8192],"c7i-flex.12xlarge":[8,30,48,98304],"c7i-flex.16xlarge":[15,50,64,131072],"c7i-flex.2xlarge":[4,15,8,16384],"c7i-flex.4xlarge":[8,30,16,32768],"c7i-flex.8xlarge":[8,30,32,65536],"c7i-flex.large":[3,10,2,4096],"c7i-flex.xlarge":[4,15,4,8192],"c7i.12xlarge":[8,30,48,98304],"c7i.16xlarge":[15,50,64,131072],"c7i.24xlarge":[15,50,96,196608],"c7i.2xlarge":[4,15,8,16384],"c7i.48xlarge":[15,50,192,393216],"c7i.4xlarge":[8,30,16,32768],"c7i.8xlarge":[8,30,32,65536],"c7i.large":[3,10,2,4096],"c7i.metal-24xl":[15,50,96,196608],"c7i.metal-48xl":[15,50,192,393216],"c7i.xlarge":[4,15,4,8192],"c8a.12xlarge":[12,64,48,98304],"c8a.16xlarge":[16,64,64,131072],"c8a.24xlarge":[16,64,96,196608],"c8a.2xlarge":[4,40,8,16384],"c8a.48xlarge":[24,64,192,393216],"c8a.4xlarge":[8,40,16,32768],"c8a.8xlarge":[10,40,32,65536],"c8a.large":[3,20,2,4096],"c8a.medium":[2,4,1,2048],"c8a.metal-24xl":[16,64,96,196608],"c8a.metal-48xl":[24,64,192,393216],"c8a.xlarge":[4,20,4,8192],"c8g.12xlarge":[8,30,48,98304],"c8g.16xlarge":[15,50,64,131072],"c8g.24xlarge":[15,50,96,196608],"c8g.2xlarge":[4,15,8,16384],"c8g.48xlarge":[15,50,192,393216],"c8g.4xlarge":[8,30,16,32768],"c8g.8xlarge":[8,30,32,65536],"c8g.large":[3,10,2,4096],"c8g.medium":[2,4,1,2048],"c8g.metal-24xl":[15,50,96,196608],"c8g.metal-48xl":[15,50,192,393216],"c8g.xlarge":[4,15,4,8192],"c8gb.12xlarge":[12,30,48,98304],"c8gb.16xlarge":[16,50,64,131072],"c8gb.24xlarge":[24,50,96,196608],"c8gb.2xlarge":[4,15,8,16384],"c8gb.48xlarge":[12,50,192,393216],"c8gb.4xlarge":[8,30,16,32768],"c8gb.8xlarge":[10,30,32,65536],"c8gb.large":[3,10,2,4096],"c8gb.medium":[2,4,1,2048],"c8gb.metal-24xl":[24,50,96,196608],"c8gb.metal-48xl":[12,50,192,393216],"c8gb.xlarge":[4,15,4,8192],"c8gd.12xlarge":[8,30,48,98304],"c8gd.16xlarge":[15,50,64,131072],"c8gd.24xlarge":[15,50,96,196608],"c8gd.2xlarge":[4,15,8,16384],"c8gd.48xlarge":[15,50,192,393216],"c8gd.4xlarge":[8,30,16,32768],"c8gd.8xlarge":[8,30,32,65536],"c8gd.large":[3,10,2,4096],"c8gd.medium":[2,4,1,2048],"c8gd.metal-24xl":[15,50,96,196608],"c8gd.metal-48xl":[15,50,192,393216],"c8gd.xlarge":[4,15,4,8192],"c8gn.12xlarge":[12,30,48,98304],"c8gn.16xlarge":[16,50,64,131072],"c8gn.24xlarge":[24,50,96,196608],"c8gn.2xlarge":[4,15,8,16384],"c8gn.48xlarge":[12,50,192,393216],"c8gn.4xlarge":[8,30,16,32768],"c8gn.8xlarge":[10,30,32,65536],"c8gn.large":[3,10,2,4096],"c8gn.medium":[2,4,1,2048],"c8gn.metal-24xl":[24,50,96,196608],"c8gn.metal-48xl":[12,50,192,393216],"c8gn.xlarge":[4,15,4,8192],"c8i-flex.12xlarge":[12,50,48,98304],"c8i-flex.16xlarge":[16,64,64,131072],"c8i-flex.2xlarge":[4,30,8,16384],"c8i-flex.4xlarge":[8,50,16,32768],"c8i-flex.8xlarge":[10,50,32,65536],"c8i-flex.large":[3,20,2,4096],"c8i-flex.xlarge":[4,30,4,8192],"c8i.12xlarge":[12,50,48,98304],"c8i.16xlarge":[16,64,64,131072],"c8i.24xlarge":[16,64,96,196608],"c8i.2xlarge":[4,30,8,16384],"c8i.32xlarge":[24,64,128,262144],"c8i.48xlarge":[24,64,192,393216],"c8i.4xlarge":[8,50,16,32768],"c8i.8xlarge":[10,50,32,65536],"c8i.96xlarge":[24,64,384,786432],"c8i.large":[3,20,2,4096],"c8i.metal-48xl":[24,64,192,393216],"c8i.metal-96xl":[24,64,384,786432],"c8i.xlarge":[4,30,4,8192],"c8ib.12xlarge":[12,50,48,98304],"c8ib.16xlarge":[16,64,64,131072],"c8ib.24xlarge":[16,64,96,196608],"c8ib.2xlarge":[4,30,8,16384],"c8ib.32xlarge":[16,64,128,262144],"c8ib.48xlarge":[24,64,192,393216],"c8ib.4xlarge":[8,50,16,32768],"c8ib.8xlarge":[8,50,32,65536],"c8ib.96xlarge":[12,64,384,786432],"c8ib.large":[4,20,2,4096],"c8ib.metal-48xl":[24,64,192,393216],"c8ib.metal-96xl":[12,64,384,786432],"c8ib.xlarge":[4,30,4,8192],"c8id.12xlarge":[12,50,48,98304],"c8id.16xlarge":[16,64,64,131072],"c8id.24xlarge":[16,64,96,196608],"c8id.2xlarge":[4,30,8,16384],"c8id.32xlarge":[24,64,128,262144],"c8id.48xlarge":[24,64,192,393216],"c8id.4xlarge":[8,50,16,32768],"c8id.8xlarge":[10,50,32,65536],"c8id.96xlarge":[24,64,384,786432],"c8id.large":[3,20,2,4096],"c8id.metal-48xl":[24,64,192,393216],"c8id.metal-96xl":[24,64,384,786432],"c8id.xlarge":[4,30,4,8192],"c8in.12xlarge":[12,50,48,98304],"c8in.16xlarge":[16,64,64,131072],"c8in.24xlarge":[16,64,96,196608],"c8in.2xlarge":[4,30,8,16384],"c8in.32xlarge":[16,64,128,262144],"c8in.48xlarge":[24,64,192,393216],"c8in.4xlarge":[8,50,16,32768],"c8in.8xlarge":[8,50,32,65536],"c8in.96xlarge":[12,64,384,786432],"c8in.large":[4,20,2,4096],"c8in.metal-48xl":[24,64,192,393216],"c8in.metal-96xl":[12,64,384,786432],"c8in.xlarge":[4,30,4,8192],"c8ine.12xlarge":[12,50,48,98304],"c8ine.2xlarge":[4,30,8,16384],"c8ine.4xlarge":[8,50,16,32768],"c8ine.8xlarge":[8,50,32,65536],"c8ine.large":[4,20,2,4096],"c8ine.xlarge":[4,30,4,8192],"c9g.12xlarge":[12,50,48,98304],"c9g.16xlarge":[16,64,64,131072],"c9g.24xlarge":[24,64,96,196608],"c9g.2xlarge":[4,30,8,16384],"c9g.48xlarge":[24,64,192,393216],"c9g.4xlarge":[8,50,16,32768],"c9g.8xlarge":[10,50,32,65536],"c9g.large":[3,20,2,4096],"c9g.medium":[2,20,1,2048],"c9g.metal-48xl":[24,64,192,393216],"c9g.xlarge":[4,30,4,8192],"c9gd.12xlarge":[12,50,48,98304],"c9gd.16xlarge":[16,64,64,131072],"c9gd.24xlarge":[24,64,96,196608],"c9gd.2xlarge":[4,30,8,16384],"c9gd.48xlarge":[24,64,192,393216],"c9gd.4xlarge":[8,50,16,32768],"c9gd.8xlarge":[10,50,32,65536],"c9gd.large":[3,20,2,4096],"c9gd.medium":[2,20,1,2048],"c9gd.metal-48xl":[24,64,192,393216],"c9gd.xlarge":[4,30,4,8192],"cr1.8xlarge":[8,30,0,0],"d2.2xlarge":[4,15,8,62464],"d2.4xlarge":[8,30,16,124928],"d2.8xlarge":[8,30,36,249856],"d2.xlarge":[4,15,4,31232],"d3.2xlarge":[4,5,8,65536],"d3.4xlarge":[4,10,16,131072],"d3.8xlarge":[3,20,32,262144],"d3.xlarge":[4,3,4,32768],"d3en.12xlarge":[3,30,48,196608],"d3en.2xlarge":[4,5,8,32768],"d3en.4xlarge":[4,10,16,65536],"d3en.6xlarge":[4,15,24,98304],"d3en.8xlarge":[4,20,32,131072],"d3en.xlarge":[4,3,4,16384],"dl2q.24xlarge":[15,50,96,786432],"f2.12xlarge":[8,30,48,524288],"f2.48xlarge":[15,50,192,2097152],"f2.6xlarge":[8,30,24,262144],"g4dn.12xlarge":[8,30,48,196608],"g4dn.16xlarge":[4,15,64,262144],"g4dn.2xlarge":[3,10,8,32768],"g4dn.4xlarge":[3,10,16,65536],"g4dn.8xlarge":[4,15,32,131072],"g4dn.metal":[15,50,96,393216],"g4dn.xlarge":[3,10,4,16384],"g5.12xlarge":[15,50,48,196608],"g5.16xlarge":[8,30,64,262144],"g5.24xlarge":[15,50,96,393216],"g5.2xlarge":[4,15,8,32768],"g5.48xlarge":[7,50,192,786432],"g5.4xlarge":[8,30,16,65536],"g5.8xlarge":[8,30,32,131072],"g5.xlarge":[4,15,4,16384],"g5g.16xlarge":[15,50,64,131072],"g5g.2xlarge":[4,15,8,16384],"g5g.4xlarge":[8,30,16,32768],"g5g.8xlarge":[8,30,32,65536],"g5g.metal":[15,50,64,131072],"g5g.xlarge":[4,15,4,8192],"g6.12xlarge":[8,30,48,196608],"g6.16xlarge":[15,50,64,262144],"g6.24xlarge":[15,50,96,393216],"g6.2xlarge":[4,15,8,32768],"g6.48xlarge":[15,50,192,786432],"g6.4xlarge":[8,30,16,65536],"g6.8xlarge":[8,30,32,131072],"g6.xlarge":[4,15,4,16384],"g6e.12xlarge":[10,30,48,393216],"g6e.16xlarge":[15,50,64,524288],"g6e.24xlarge":[10,50,96,786432],"g6e.2xlarge":[4,15,8,65536],"g6e.48xlarge":[10,50,192,1572864],"g6e.4xlarge":[8,30,16,131072],"g6e.8xlarge":[8,30,32,262144],"g6e.xlarge":[4,15,4,32768],"g6f.2xlarge":[4,15,8,32768],"g6f.4xlarge":[8,30,16,65536],"g6f.large":[2,10,2,8192],"g6f.xlarge":[4,15,4,16384],"g7.12xlarge":[12,64,48,196608],"g7.24xlarge":[24,64,96,393216],"g7.2xlarge":[4,64,8,32768],"g7.48xlarge":[12,64,192,786432],"g7.4xlarge":[8,64,16,65536],"g7.8xlarge":[10,64,32,131072],"g7e.12xlarge":[10,64,48,524288],"g7e.24xlarge":[10,64,96,1048576],"g7e.2xlarge":[4,64,8,65536],"g7e.48xlarge":[10,64,192,2097152],"g7e.4xlarge":[8,64,16,131072],"g7e.8xlarge":[8,64,32,262144],"gr6.4xlarge":[8,30,16,131072],"gr6.8xlarge":[8,30,32,262144],"gr6f.4xlarge":[8,30,16,131072],"h1.16xlarge":[8,50,64,262144],"h1.2xlarge":[4,15,8,32768],"h1.4xlarge":[8,30,16,65536],"h1.8xlarge":[8,30,32,131072],"hpc6a.48xlarge":[2,50,96,393216],"hpc6id.32xlarge":[1,50,64,1048576],"hpc7a.12xlarge":[2,50,24,786432],"hpc7a.24xlarge":[2,50,48,786432],"hpc7a.48xlarge":[2,50,96,786432],"hpc7a.96xlarge":[2,50,192,786432],"hpc7g.16xlarge":[4,50,64,131072],"hpc7g.4xlarge":[4,50,16,131072],"hpc7g.8xlarge":[4,50,32,131072],"hpc8a.96xlarge":[2,50,192,786432],"hs1.8xlarge":[8,30,0,0],"i2.2xlarge":[4,15,8,62464],"i2.4xlarge":[8,30,16,124928],"i2.8xlarge":[8,30,32,249856],"i2.xlarge":[4,15,4,31232],"i3.16xlarge":[15,50,64,499712],"i3.2xlarge":[4,15,8,62464],"i3.4xlarge":[8,30,16,124928],"i3.8xlarge":[8,30,32,249856],"i3.large":[3,10,2,15616],"i3.xlarge":[4,15,4,31232],"i3en.12xlarge":[8,30,48,393216],"i3en.24xlarge":[15,50,96,786432],"i3en.2xlarge":[4,15,8,65536],"i3en.3xlarge":[4,15,12,98304],"i3en.6xlarge":[8,30,24,196608],"i3en.large":[3,10,2,16384],"i3en.metal":[15,50,96,786432],"i3en.xlarge":[4,15,4,32768],"i4g.16xlarge":[15,50,64,524288],"i4g.2xlarge":[4,15,8,65536],"i4g.4xlarge":[8,30,16,131072],"i4g.8xlarge":[8,30,32,262144],"i4g.large":[3,10,2,16384],"i4g.xlarge":[4,15,4,32768],"i4i.12xlarge":[8,30,48,393216],"i4i.16xlarge":[15,50,64,524288],"i4i.24xlarge":[15,30,96,786432],"i4i.2xlarge":[4,15,8,65536],"i4i.32xlarge":[15,50,128,1048576],"i4i.4xlarge":[8,30,16,131072],"i4i.8xlarge":[8,30,32,262144],"i4i.large":[3,10,2,16384],"i4i.metal":[15,50,128,1048576],"i4i.xlarge":[4,15,4,32768],"i7i.12xlarge":[8,30,48,393216],"i7i.16xlarge":[15,50,64,524288],"i7i.24xlarge":[15,50,96,786432],"i7i.2xlarge":[4,15,8,65536],"i7i.48xlarge":[15,50,192,1572864],"i7i.4xlarge":[8,30,16,131072],"i7i.8xlarge":[8,30,32,262144],"i7i.large":[3,10,2,16384],"i7i.metal-24xl":[15,50,96,786432],"i7i.metal-48xl":[15,50,192,1572864],"i7i.xlarge":[4,15,4,32768],"i7ie.12xlarge":[8,50,48,393216],"i7ie.18xlarge":[15,50,72,589824],"i7ie.24xlarge":[15,50,96,786432],"i7ie.2xlarge":[4,15,8,65536],"i7ie.3xlarge":[4,15,12,98304],"i7ie.48xlarge":[8,50,192,1572864],"i7ie.6xlarge":[8,30,24,196608],"i7ie.large":[3,10,2,16384],"i7ie.metal-24xl":[15,50,96,786432],"i7ie.metal-48xl":[8,50,192,1572864],"i7ie.xlarge":[4,15,4,32768],"i8g.12xlarge":[8,30,48,393216],"i8g.16xlarge":[15,50,64,524288],"i8g.24xlarge":[15,50,96,786432],"i8g.2xlarge":[4,15,8,65536],"i8g.48xlarge":[15,50,192,1572864],"i8g.4xlarge":[8,30,16,131072],"i8g.8xlarge":[8,30,32,262144],"i8g.large":[3,10,2,16384],"i8g.metal-24xl":[15,50,96,786432],"i8g.metal-48xl":[15,50,192,1572864],"i8g.xlarge":[4,15,4,32768],"i8ge.12xlarge":[12,30,48,393216],"i8ge.18xlarge":[16,50,72,589824],"i8ge.24xlarge":[16,50,96,786432],"i8ge.2xlarge":[4,15,8,65536],"i8ge.3xlarge":[6,30,12,98304],"i8ge.48xlarge":[12,50,192,1572864],"i8ge.6xlarge":[10,30,24,196608],"i8ge.large":[3,10,2,16384],"i8ge.metal-24xl":[16,50,96,786432],"i8ge.metal-48xl":[12,50,192,1572864],"i8ge.xlarge":[4,15,4,32768],"im4gn.16xlarge":[15,50,64,262144],"im4gn.2xlarge":[4,15,8,32768],"im4gn.4xlarge":[8,30,16,65536],"im4gn.8xlarge":[8,30,32,131072],"im4gn.large":[3,10,2,8192],"im4gn.xlarge":[4,15,4,16384],"inf1.24xlarge":[11,30,96,196608],"inf1.2xlarge":[4,10,8,16384],"inf1.6xlarge":[8,30,24,49152],"inf1.xlarge":[4,10,4,8192],"inf2.24xlarge":[15,50,96,393216],"inf2.48xlarge":[15,50,192,786432],"inf2.8xlarge":[8,30,32,131072],"inf2.xlarge":[4,15,4,16384],"is4gen.2xlarge":[4,15,8,49152],"is4gen.4xlarge":[8,30,16,98304],"is4gen.8xlarge":[8,30,32,196608],"is4gen.large":[3,10,2,12288],"is4gen.medium":[2,4,1,6144],"is4gen.xlarge":[4,15,4,24576],"m1.large":[3,10,2,7680],"m1.medium":[2,6,1,3788],"m1.small":[2,4,1,1740],"m1.xlarge":[4,15,4,15360],"m2.2xlarge":[4,30,4,35020],"m2.4xlarge":[8,30,8,70041],"m2.xlarge":[4,15,2,17510],"m3.2xlarge":[4,30,8,30720],"m3.large":[3,10,2,7680],"m3.medium":[2,6,1,3840],"m3.xlarge":[4,15,4,15360],"m4.10xlarge":[8,30,40,163840],"m4.16xlarge":[8,30,64,262144],"m4.2xlarge":[4,15,8,32768],"m4.4xlarge":[8,30,16,65536],"m4.large":[2,10,2,8192],"m4.xlarge":[4,15,4,16384],"m5.12xlarge":[8,30,48,196608],"m5.16xlarge":[15,50,64,262144],"m5.24xlarge":[15,50,96,393216],"m5.2xlarge":[4,15,8,32768],"m5.4xlarge":[8,30,16,65536],"m5.8xlarge":[8,30,32,131072],"m5.large":[3,10,2,8192],"m5.metal":[15,50,96,393216],"m5.xlarge":[4,15,4,16384],"m5a.12xlarge":[8,30,48,196608],"m5a.16xlarge":[15,50,64,262144],"m5a.24xlarge":[15,50,96,393216],"m5a.2xlarge":[4,15,8,32768],"m5a.4xlarge":[8,30,16,65536],"m5a.8xlarge":[8,30,32,131072],"m5a.large":[3,10,2,8192],"m5a.xlarge":[4,15,4,16384],"m5ad.12xlarge":[8,30,48,196608],"m5ad.16xlarge":[15,50,64,262144],"m5ad.24xlarge":[15,50,96,393216],"m5ad.2xlarge":[4,15,8,32768],"m5ad.4xlarge":[8,30,16,65536],"m5ad.8xlarge":[8,30,32,131072],"m5ad.large":[3,10,2,8192],"m5ad.xlarge":[4,15,4,16384],"m5d.12xlarge":[8,30,48,196608],"m5d.16xlarge":[15,50,64,262144],"m5d.24xlarge":[15,50,96,393216],"m5d.2xlarge":[4,15,8,32768],"m5d.4xlarge":[8,30,16,65536],"m5d.8xlarge":[8,30,32,131072],"m5d.large":[3,10,2,8192],"m5d.metal":[15,50,96,393216],"m5d.xlarge":[4,15,4,16384],"m5dn.12xlarge":[8,30,48,196608],"m5dn.16xlarge":[15,50,64,262144],"m5dn.24xlarge":[15,50,96,393216],"m5dn.2xlarge":[4,15,8,32768],"m5dn.4xlarge":[8,30,16,65536],"m5dn.8xlarge":[8,30,32,131072],"m5dn.large":[3,10,2,8192],"m5dn.metal":[15,50,96,393216],"m5dn.xlarge":[4,15,4,16384],"m5n.12xlarge":[8,30,48,196608],"m5n.16xlarge":[15,50,64,262144],"m5n.24xlarge":[15,50,96,393216],"m5n.2xlarge":[4,15,8,32768],"m5n.4xlarge":[8,30,16,65536],"m5n.8xlarge":[8,30,32,131072],"m5n.large":[3,10,2,8192],"m5n.metal":[15,50,96,393216],"m5n.xlarge":[4,15,4,16384],"m5zn.12xlarge":[15,50,48,196608],"m5zn.2xlarge":[4,15,8,32768],"m5zn.3xlarge":[8,30,12,49152],"m5zn.6xlarge":[8,30,24,98304],"m5zn.large":[3,10,2,8192],"m5zn.metal":[15,50,48,196608],"m5zn.xlarge":[4,15,4,16384],"m6a.12xlarge":[8,30,48,196608],"m6a.16xlarge":[15,50,64,262144],"m6a.24xlarge":[15,50,96,393216],"m6a.2xlarge":[4,15,8,32768],"m6a.32xlarge":[15,50,128,524288],"m6a.48xlarge":[15,50,192,786432],"m6a.4xlarge":[8,30,16,65536],"m6a.8xlarge":[8,30,32,131072],"m6a.large":[3,10,2,8192],"m6a.metal":[15,50,192,786432],"m6a.xlarge":[4,15,4,16384],"m6g.12xlarge":[8,30,48,196608],"m6g.16xlarge":[15,50,64,262144],"m6g.2xlarge":[4,15,8,32768],"m6g.4xlarge":[8,30,16,65536],"m6g.8xlarge":[8,30,32,131072],"m6g.large":[3,10,2,8192],"m6g.medium":[2,4,1,4096],"m6g.metal":[15,50,64,262144],"m6g.xlarge":[4,15,4,16384],"m6gd.12xlarge":[8,30,48,196608],"m6gd.16xlarge":[15,50,64,262144],"m6gd.2xlarge":[4,15,8,32768],"m6gd.4xlarge":[8,30,16,65536],"m6gd.8xlarge":[8,30,32,131072],"m6gd.large":[3,10,2,8192],"m6gd.medium":[2,4,1,4096],"m6gd.metal":[15,50,64,262144],"m6gd.xlarge":[4,15,4,16384],"m6i.12xlarge":[8,30,48,196608],"m6i.16xlarge":[15,50,64,262144],"m6i.24xlarge":[15,50,96,393216],"m6i.2xlarge":[4,15,8,32768],"m6i.32xlarge":[15,50,128,524288],"m6i.4xlarge":[8,30,16,65536],"m6i.8xlarge":[8,30,32,131072],"m6i.large":[3,10,2,8192],"m6i.metal":[15,50,128,524288],"m6i.xlarge":[4,15,4,16384],"m6id.12xlarge":[8,30,48,196608],"m6id.16xlarge":[15,50,64,262144],"m6id.24xlarge":[15,50,96,393216],"m6id.2xlarge":[4,15,8,32768],"m6id.32xlarge":[15,50,128,524288],"m6id.4xlarge":[8,30,16,65536],"m6id.8xlarge":[8,30,32,131072],"m6id.large":[3,10,2,8192],"m6id.metal":[15,50,128,524288],"m6id.xlarge":[4,15,4,16384],"m6idn.12xlarge":[8,30,48,196608],"m6idn.16xlarge":[15,50,64,262144],"m6idn.24xlarge":[15,50,96,393216],"m6idn.2xlarge":[4,15,8,32768],"m6idn.32xlarge":[8,50,128,524288],"m6idn.4xlarge":[8,30,16,65536],"m6idn.8xlarge":[8,30,32,131072],"m6idn.large":[3,10,2,8192],"m6idn.metal":[8,50,128,524288],"m6idn.xlarge":[4,15,4,16384],"m6in.12xlarge":[8,30,48,196608],"m6in.16xlarge":[15,50,64,262144],"m6in.24xlarge":[15,50,96,393216],"m6in.2xlarge":[4,15,8,32768],"m6in.32xlarge":[8,50,128,524288],"m6in.4xlarge":[8,30,16,65536],"m6in.8xlarge":[8,30,32,131072],"m6in.large":[3,10,2,8192],"m6in.metal":[8,50,128,524288],"m6in.xlarge":[4,15,4,16384],"m7a.12xlarge":[8,30,48,196608],"m7a.16xlarge":[15,50,64,262144],"m7a.24xlarge":[15,50,96,393216],"m7a.2xlarge":[4,15,8,32768],"m7a.32xlarge":[15,50,128,524288],"m7a.48xlarge":[15,50,192,786432],"m7a.4xlarge":[8,30,16,65536],"m7a.8xlarge":[8,30,32,131072],"m7a.large":[3,10,2,8192],"m7a.medium":[2,4,1,4096],"m7a.metal-48xl":[15,50,192,786432],"m7a.xlarge":[4,15,4,16384],"m7g.12xlarge":[8,30,48,196608],"m7g.16xlarge":[15,50,64,262144],"m7g.2xlarge":[4,15,8,32768],"m7g.4xlarge":[8,30,16,65536],"m7g.8xlarge":[8,30,32,131072],"m7g.large":[3,10,2,8192],"m7g.medium":[2,4,1,4096],"m7g.metal":[15,50,64,262144],"m7g.xlarge":[4,15,4,16384],"m7gd.12xlarge":[8,30,48,196608],"m7gd.16xlarge":[15,50,64,262144],"m7gd.2xlarge":[4,15,8,32768],"m7gd.4xlarge":[8,30,16,65536],"m7gd.8xlarge":[8,30,32,131072],"m7gd.large":[3,10,2,8192],"m7gd.medium":[2,4,1,4096],"m7gd.metal":[15,50,64,262144],"m7gd.xlarge":[4,15,4,16384],"m7i-flex.12xlarge":[8,30,48,196608],"m7i-flex.16xlarge":[15,50,64,262144],"m7i-flex.2xlarge":[4,15,8,32768],"m7i-flex.4xlarge":[8,30,16,65536],"m7i-flex.8xlarge":[8,30,32,131072],"m7i-flex.large":[3,10,2,8192],"m7i-flex.xlarge":[4,15,4,16384],"m7i.12xlarge":[8,30,48,196608],"m7i.16xlarge":[15,50,64,262144],"m7i.24xlarge":[15,50,96,393216],"m7i.2xlarge":[4,15,8,32768],"m7i.48xlarge":[15,50,192,786432],"m7i.4xlarge":[8,30,16,65536],"m7i.8xlarge":[8,30,32,131072],"m7i.large":[3,10,2,8192],"m7i.metal-24xl":[15,50,96,393216],"m7i.metal-48xl":[15,50,192,786432],"m7i.xlarge":[4,15,4,16384],"m8a.12xlarge":[12,64,48,196608],"m8a.16xlarge":[16,64,64,262144],"m8a.24xlarge":[16,64,96,393216],"m8a.2xlarge":[4,40,8,32768],"m8a.48xlarge":[24,64,192,786432],"m8a.4xlarge":[8,40,16,65536],"m8a.8xlarge":[10,40,32,131072],"m8a.large":[3,20,2,8192],"m8a.medium":[2,4,1,4096],"m8a.metal-24xl":[16,64,96,393216],"m8a.metal-48xl":[24,64,192,786432],"m8a.xlarge":[4,20,4,16384],"m8azn.12xlarge":[16,64,48,196608],"m8azn.24xlarge":[16,64,96,393216],"m8azn.3xlarge":[8,40,12,49152],"m8azn.6xlarge":[8,40,24,98304],"m8azn.large":[4,20,2,8192],"m8azn.medium":[3,4,1,4096],"m8azn.metal-12xl":[16,64,48,196608],"m8azn.metal-24xl":[16,64,96,393216],"m8azn.xlarge":[4,20,4,16384],"m8g.12xlarge":[8,30,48,196608],"m8g.16xlarge":[15,50,64,262144],"m8g.24xlarge":[15,50,96,393216],"m8g.2xlarge":[4,15,8,32768],"m8g.48xlarge":[15,50,192,786432],"m8g.4xlarge":[8,30,16,65536],"m8g.8xlarge":[8,30,32,131072],"m8g.large":[3,10,2,8192],"m8g.medium":[2,4,1,4096],"m8g.metal-24xl":[15,50,96,393216],"m8g.metal-48xl":[15,50,192,786432],"m8g.xlarge":[4,15,4,16384],"m8gb.12xlarge":[12,30,48,196608],"m8gb.16xlarge":[16,50,64,262144],"m8gb.24xlarge":[24,50,96,393216],"m8gb.2xlarge":[4,15,8,32768],"m8gb.48xlarge":[12,50,192,786432],"m8gb.4xlarge":[8,30,16,65536],"m8gb.8xlarge":[10,30,32,131072],"m8gb.large":[3,10,2,8192],"m8gb.medium":[2,4,1,4096],"m8gb.metal-24xl":[24,50,96,393216],"m8gb.metal-48xl":[12,50,192,786432],"m8gb.xlarge":[4,15,4,16384],"m8gd.12xlarge":[8,30,48,196608],"m8gd.16xlarge":[15,50,64,262144],"m8gd.24xlarge":[15,50,96,393216],"m8gd.2xlarge":[4,15,8,32768],"m8gd.48xlarge":[15,50,192,786432],"m8gd.4xlarge":[8,30,16,65536],"m8gd.8xlarge":[8,30,32,131072],"m8gd.large":[3,10,2,8192],"m8gd.medium":[2,4,1,4096],"m8gd.metal-24xl":[15,50,96,393216],"m8gd.metal-48xl":[15,50,192,786432],"m8gd.xlarge":[4,15,4,16384],"m8gn.12xlarge":[12,30,48,196608],"m8gn.16xlarge":[16,50,64,262144],"m8gn.24xlarge":[24,50,96,393216],"m8gn.2xlarge":[4,15,8,32768],"m8gn.48xlarge":[12,50,192,786432],"m8gn.4xlarge":[8,30,16,65536],"m8gn.8xlarge":[10,30,32,131072],"m8gn.large":[3,10,2,8192],"m8gn.medium":[2,4,1,4096],"m8gn.metal-24xl":[24,50,96,393216],"m8gn.metal-48xl":[12,50,192,786432],"m8gn.xlarge":[4,15,4,16384],"m8i-flex.12xlarge":[12,50,48,196608],"m8i-flex.16xlarge":[16,64,64,262144],"m8i-flex.2xlarge":[4,30,8,32768],"m8i-flex.4xlarge":[8,50,16,65536],"m8i-flex.8xlarge":[10,50,32,131072],"m8i-flex.large":[3,20,2,8192],"m8i-flex.xlarge":[4,30,4,16384],"m8i.12xlarge":[12,50,48,196608],"m8i.16xlarge":[16,64,64,262144],"m8i.24xlarge":[16,64,96,393216],"m8i.2xlarge":[4,30,8,32768],"m8i.32xlarge":[24,64,128,524288],"m8i.48xlarge":[24,64,192,786432],"m8i.4xlarge":[8,50,16,65536],"m8i.8xlarge":[10,50,32,131072],"m8i.96xlarge":[24,64,384,1572864],"m8i.large":[3,20,2,8192],"m8i.metal-48xl":[24,64,192,786432],"m8i.metal-96xl":[24,64,384,1572864],"m8i.xlarge":[4,30,4,16384],"m8ib.12xlarge":[12,50,48,196608],"m8ib.16xlarge":[16,64,64,262144],"m8ib.24xlarge":[16,64,96,393216],"m8ib.2xlarge":[4,30,8,32768],"m8ib.32xlarge":[16,64,128,524288],"m8ib.48xlarge":[24,64,192,786432],"m8ib.4xlarge":[8,50,16,65536],"m8ib.8xlarge":[8,50,32,131072],"m8ib.96xlarge":[12,64,384,1572864],"m8ib.large":[4,20,2,8192],"m8ib.metal-48xl":[24,64,192,786432],"m8ib.metal-96xl":[12,64,384,1572864],"m8ib.xlarge":[4,30,4,16384],"m8id.12xlarge":[12,50,48,196608],"m8id.16xlarge":[16,64,64,262144],"m8id.24xlarge":[16,64,96,393216],"m8id.2xlarge":[4,30,8,32768],"m8id.32xlarge":[24,64,128,524288],"m8id.48xlarge":[24,64,192,786432],"m8id.4xlarge":[8,50,16,65536],"m8id.8xlarge":[10,50,32,131072],"m8id.96xlarge":[24,64,384,1572864],"m8id.large":[3,20,2,8192],"m8id.metal-48xl":[24,64,192,786432],"m8id.metal-96xl":[24,64,384,1572864],"m8id.xlarge":[4,30,4,16384],"m8idb.12xlarge":[12,50,48,196608],"m8idb.16xlarge":[16,64,64,262144],"m8idb.24xlarge":[16,64,96,393216],"m8idb.2xlarge":[4,30,8,32768],"m8idb.32xlarge":[16,64,128,524288],"m8idb.48xlarge":[24,64,192,786432],"m8idb.4xlarge":[8,50,16,65536],"m8idb.8xlarge":[8,50,32,131072],"m8idb.96xlarge":[12,64,384,1572864],"m8idb.large":[4,20,2,8192],"m8idb.metal-48xl":[24,64,192,786432],"m8idb.metal-96xl":[12,64,384,1572864],"m8idb.xlarge":[4,30,4,16384],"m8idn.12xlarge":[12,50,48,196608],"m8idn.16xlarge":[16,64,64,262144],"m8idn.24xlarge":[16,64,96,393216],"m8idn.2xlarge":[4,30,8,32768],"m8idn.32xlarge":[16,64,128,524288],"m8idn.48xlarge":[24,64,192,786432],"m8idn.4xlarge":[8,50,16,65536],"m8idn.8xlarge":[8,50,32,131072],"m8idn.96xlarge":[12,64,384,1572864],"m8idn.large":[4,20,2,8192],"m8idn.metal-48xl":[24,64,192,786432],"m8idn.metal-96xl":[12,64,384,1572864],"m8idn.xlarge":[4,30,4,16384],"m8in.12xlarge":[12,50,48,196608],"m8in.16xlarge":[16,64,64,262144],"m8in.24xlarge":[16,64,96,393216],"m8in.2xlarge":[4,30,8,32768],"m8in.32xlarge":[16,64,128,524288],"m8in.48xlarge":[24,64,192,786432],"m8in.4xlarge":[8,50,16,65536],"m8in.8xlarge":[8,50,32,131072],"m8in.96xlarge":[12,64,384,1572864],"m8in.large":[4,20,2,8192],"m8in.metal-48xl":[24,64,192,786432],"m8in.metal-96xl":[12,64,384,1572864],"m8in.xlarge":[4,30,4,16384],"m8ine.12xlarge":[12,50,48,196608],"m8ine.2xlarge":[4,30,8,32768],"m8ine.4xlarge":[8,50,16,65536],"m8ine.8xlarge":[8,50,32,131072],"m8ine.large":[4,20,2,8192],"m8ine.xlarge":[4,30,4,16384],"m9g.12xlarge":[12,50,48,196608],"m9g.16xlarge":[16,64,64,262144],"m9g.24xlarge":[24,64,96,393216],"m9g.2xlarge":[4,30,8,32768],"m9g.48xlarge":[24,64,192,786432],"m9g.4xlarge":[8,50,16,65536],"m9g.8xlarge":[10,50,32,131072],"m9g.large":[3,20,2,8192],"m9g.medium":[2,20,1,4096],"m9g.metal-48xl":[24,64,192,786432],"m9g.xlarge":[4,30,4,16384],"m9gd.12xlarge":[12,50,48,196608],"m9gd.16xlarge":[16,64,64,262144],"m9gd.24xlarge":[24,64,96,393216],"m9gd.2xlarge":[4,30,8,32768],"m9gd.48xlarge":[24,64,192,786432],"m9gd.4xlarge":[8,50,16,65536],"m9gd.8xlarge":[10,50,32,131072],"m9gd.large":[3,20,2,8192],"m9gd.medium":[2,20,1,4096],"m9gd.metal-48xl":[24,64,192,786432],"m9gd.xlarge":[4,30,4,16384],"mac-m3ultra.metal":[8,30,28,262144],"mac-m4.metal":[8,30,10,24576],"mac-m4max.metal":[8,30,16,131072],"mac-m4pro.metal":[8,30,14,49152],"mac1.metal":[8,30,12,32768],"mac2-m1ultra.metal":[8,30,20,131072],"mac2-m2.metal":[8,30,8,24576],"mac2-m2pro.metal":[8,30,12,32768],"mac2.metal":[8,30,8,16384],"p3dn.24xlarge":[15,50,96,786432],"p4d.24xlarge":[15,50,96,1179648],"p4de.24xlarge":[15,50,96,1179648],"p5.48xlarge":[2,50,192,2097152],"p5.4xlarge":[4,30,16,262144],"p5e.48xlarge":[2,50,192,2097152],"p5en.48xlarge":[4,50,192,2097152],"p6-b200.48xlarge":[4,50,192,2097152],"p6-b300.48xlarge":[4,50,192,4194304],"r3.2xlarge":[4,15,8,62464],"r3.4xlarge":[8,30,16,124928],"r3.8xlarge":[8,30,32,249856],"r3.large":[3,10,2,15360],"r3.xlarge":[4,15,4,31232],"r4.16xlarge":[15,50,64,499712],"r4.2xlarge":[4,15,8,62464],"r4.4xlarge":[8,30,16,124928],"r4.8xlarge":[8,30,32,249856],"r4.large":[3,10,2,15616],"r4.xlarge":[4,15,4,31232],"r5.12xlarge":[8,30,48,393216],"r5.16xlarge":[15,50,64,524288],"r5.24xlarge":[15,50,96,786432],"r5.2xlarge":[4,15,8,65536],"r5.4xlarge":[8,30,16,131072],"r5.8xlarge":[8,30,32,262144],"r5.large":[3,10,2,16384],"r5.metal":[15,50,96,786432],"r5.xlarge":[4,15,4,32768],"r5a.12xlarge":[8,30,48,393216],"r5a.16xlarge":[15,50,64,524288],"r5a.24xlarge":[15,50,96,786432],"r5a.2xlarge":[4,15,8,65536],"r5a.4xlarge":[8,30,16,131072],"r5a.8xlarge":[8,30,32,262144],"r5a.large":[3,10,2,16384],"r5a.xlarge":[4,15,4,32768],"r5ad.12xlarge":[8,30,48,393216],"r5ad.16xlarge":[15,50,64,524288],"r5ad.24xlarge":[15,50,96,786432],"r5ad.2xlarge":[4,15,8,65536],"r5ad.4xlarge":[8,30,16,131072],"r5ad.8xlarge":[8,30,32,262144],"r5ad.large":[3,10,2,16384],"r5ad.xlarge":[4,15,4,32768],"r5b.12xlarge":[8,30,48,393216],"r5b.16xlarge":[15,50,64,524288],"r5b.24xlarge":[15,50,96,786432],"r5b.2xlarge":[4,15,8,65536],"r5b.4xlarge":[8,30,16,131072],"r5b.8xlarge":[8,30,32,262144],"r5b.large":[3,10,2,16384],"r5b.metal":[15,50,96,786432],"r5b.xlarge":[4,15,4,32768],"r5d.12xlarge":[8,30,48,393216],"r5d.16xlarge":[15,50,64,524288],"r5d.24xlarge":[15,50,96,786432],"r5d.2xlarge":[4,15,8,65536],"r5d.4xlarge":[8,30,16,131072],"r5d.8xlarge":[8,30,32,262144],"r5d.large":[3,10,2,16384],"r5d.metal":[15,50,96,786432],"r5d.xlarge":[4,15,4,32768],"r5dn.12xlarge":[8,30,48,393216],"r5dn.16xlarge":[15,50,64,524288],"r5dn.24xlarge":[15,50,96,786432],"r5dn.2xlarge":[4,15,8,65536],"r5dn.4xlarge":[8,30,16,131072],"r5dn.8xlarge":[8,30,32,262144],"r5dn.large":[3,10,2,16384],"r5dn.metal":[15,50,96,786432],"r5dn.xlarge":[4,15,4,32768],"r5n.12xlarge":[8,30,48,393216],"r5n.16xlarge":[15,50,64,524288],"r5n.24xlarge":[15,50,96,786432],"r5n.2xlarge":[4,15,8,65536],"r5n.4xlarge":[8,30,16,131072],"r5n.8xlarge":[8,30,32,262144],"r5n.large":[3,10,2,16384],"r5n.metal":[15,50,96,786432],"r5n.xlarge":[4,15,4,32768],"r6a.12xlarge":[8,30,48,393216],"r6a.16xlarge":[15,50,64,524288],"r6a.24xlarge":[15,50,96,786432],"r6a.2xlarge":[4,15,8,65536],"r6a.32xlarge":[15,50,128,1048576],"r6a.48xlarge":[15,50,192,1572864],"r6a.4xlarge":[8,30,16,131072],"r6a.8xlarge":[8,30,32,262144],"r6a.large":[3,10,2,16384],"r6a.metal":[15,50,192,1572864],"r6a.xlarge":[4,15,4,32768],"r6g.12xlarge":[8,30,48,393216],"r6g.16xlarge":[15,50,64,524288],"r6g.2xlarge":[4,15,8,65536],"r6g.4xlarge":[8,30,16,131072],"r6g.8xlarge":[8,30,32,262144],"r6g.large":[3,10,2,16384],"r6g.medium":[2,4,1,8192],"r6g.metal":[15,50,64,524288],"r6g.xlarge":[4,15,4,32768],"r6gd.12xlarge":[8,30,48,393216],"r6gd.16xlarge":[15,50,64,524288],"r6gd.2xlarge":[4,15,8,65536],"r6gd.4xlarge":[8,30,16,131072],"r6gd.8xlarge":[8,30,32,262144],"r6gd.large":[3,10,2,16384],"r6gd.medium":[2,4,1,8192],"r6gd.metal":[15,50,64,524288],"r6gd.xlarge":[4,15,4,32768],"r6i.12xlarge":[8,30,48,393216],"r6i.16xlarge":[15,50,64,524288],"r6i.24xlarge":[15,50,96,786432],"r6i.2xlarge":[4,15,8,65536],"r6i.32xlarge":[15,50,128,1048576],"r6i.4xlarge":[8,30,16,131072],"r6i.8xlarge":[8,30,32,262144],"r6i.large":[3,10,2,16384],"r6i.metal":[15,50,128,1048576],"r6i.xlarge":[4,15,4,32768],"r6id.12xlarge":[8,30,48,393216],"r6id.16xlarge":[15,50,64,524288],"r6id.24xlarge":[15,50,96,786432],"r6id.2xlarge":[4,15,8,65536],"r6id.32xlarge":[15,50,128,1048576],"r6id.4xlarge":[8,30,16,131072],"r6id.8xlarge":[8,30,32,262144],"r6id.large":[3,10,2,16384],"r6id.metal":[15,50,128,1048576],"r6id.xlarge":[4,15,4,32768],"r6idn.12xlarge":[8,30,48,393216],"r6idn.16xlarge":[15,50,64,524288],"r6idn.24xlarge":[15,50,96,786432],"r6idn.2xlarge":[4,15,8,65536],"r6idn.32xlarge":[8,50,128,1048576],"r6idn.4xlarge":[8,30,16,131072],"r6idn.8xlarge":[8,30,32,262144],"r6idn.large":[3,10,2,16384],"r6idn.metal":[8,50,128,1048576],"r6idn.xlarge":[4,15,4,32768],"r6in.12xlarge":[8,30,48,393216],"r6in.16xlarge":[15,50,64,524288],"r6in.24xlarge":[15,50,96,786432],"r6in.2xlarge":[4,15,8,65536],"r6in.32xlarge":[8,50,128,1048576],"r6in.4xlarge":[8,30,16,131072],"r6in.8xlarge":[8,30,32,262144],"r6in.large":[3,10,2,16384],"r6in.metal":[8,50,128,1048576],"r6in.xlarge":[4,15,4,32768],"r7a.12xlarge":[8,30,48,393216],"r7a.16xlarge":[15,50,64,524288],"r7a.24xlarge":[15,50,96,786432],"r7a.2xlarge":[4,15,8,65536],"r7a.32xlarge":[15,50,128,1048576],"r7a.48xlarge":[15,50,192,1572864],"r7a.4xlarge":[8,30,16,131072],"r7a.8xlarge":[8,30,32,262144],"r7a.large":[3,10,2,16384],"r7a.medium":[2,4,1,8192],"r7a.metal-48xl":[15,50,192,1572864],"r7a.xlarge":[4,15,4,32768],"r7g.12xlarge":[8,30,48,393216],"r7g.16xlarge":[15,50,64,524288],"r7g.2xlarge":[4,15,8,65536],"r7g.4xlarge":[8,30,16,131072],"r7g.8xlarge":[8,30,32,262144],"r7g.large":[3,10,2,16384],"r7g.medium":[2,4,1,8192],"r7g.metal":[15,50,64,524288],"r7g.xlarge":[4,15,4,32768],"r7gd.12xlarge":[8,30,48,393216],"r7gd.16xlarge":[15,50,64,524288],"r7gd.2xlarge":[4,15,8,65536],"r7gd.4xlarge":[8,30,16,131072],"r7gd.8xlarge":[8,30,32,262144],"r7gd.large":[3,10,2,16384],"r7gd.medium":[2,4,1,8192],"r7gd.metal":[15,50,64,524288],"r7gd.xlarge":[4,15,4,32768],"r7i.12xlarge":[8,30,48,393216],"r7i.16xlarge":[15,50,64,524288],"r7i.24xlarge":[15,50,96,786432],"r7i.2xlarge":[4,15,8,65536],"r7i.48xlarge":[15,50,192,1572864],"r7i.4xlarge":[8,30,16,131072],"r7i.8xlarge":[8,30,32,262144],"r7i.large":[3,10,2,16384],"r7i.metal-24xl":[15,50,96,786432],"r7i.metal-48xl":[15,50,192,1572864],"r7i.xlarge":[4,15,4,32768],"r7iz.12xlarge":[8,30,48,393216],"r7iz.16xlarge":[15,50,64,524288],"r7iz.2xlarge":[4,15,8,65536],"r7iz.32xlarge":[15,50,128,1048576],"r7iz.4xlarge":[8,30,16,131072],"r7iz.8xlarge":[8,30,32,262144],"r7iz.large":[3,10,2,16384],"r7iz.metal-16xl":[15,50,64,524288],"r7iz.metal-32xl":[15,50,128,1048576],"r7iz.xlarge":[4,15,4,32768],"r8a.12xlarge":[12,64,48,393216],"r8a.16xlarge":[16,64,64,524288],"r8a.24xlarge":[16,64,96,786432],"r8a.2xlarge":[4,40,8,65536],"r8a.48xlarge":[24,64,192,1572864],"r8a.4xlarge":[8,40,16,131072],"r8a.8xlarge":[10,40,32,262144],"r8a.large":[3,20,2,16384],"r8a.medium":[2,4,1,8192],"r8a.metal-24xl":[16,64,96,786432],"r8a.metal-48xl":[24,64,192,1572864],"r8a.xlarge":[4,20,4,32768],"r8g.12xlarge":[8,30,48,393216],"r8g.16xlarge":[15,50,64,524288],"r8g.24xlarge":[15,50,96,786432],"r8g.2xlarge":[4,15,8,65536],"r8g.48xlarge":[15,50,192,1572864],"r8g.4xlarge":[8,30,16,131072],"r8g.8xlarge":[8,30,32,262144],"r8g.large":[3,10,2,16384],"r8g.medium":[2,4,1,8192],"r8g.metal-24xl":[15,50,96,786432],"r8g.metal-48xl":[15,50,192,1572864],"r8g.xlarge":[4,15,4,32768],"r8gb.12xlarge":[12,30,48,393216],"r8gb.16xlarge":[16,50,64,524288],"r8gb.24xlarge":[24,50,96,786432],"r8gb.2xlarge":[4,15,8,65536],"r8gb.48xlarge":[12,50,192,1572864],"r8gb.4xlarge":[8,30,16,131072],"r8gb.8xlarge":[10,30,32,262144],"r8gb.large":[3,10,2,16384],"r8gb.medium":[2,4,1,8192],"r8gb.metal-24xl":[24,50,96,786432],"r8gb.metal-48xl":[12,50,192,1572864],"r8gb.xlarge":[4,15,4,32768],"r8gd.12xlarge":[8,30,48,393216],"r8gd.16xlarge":[15,50,64,524288],"r8gd.24xlarge":[15,50,96,786432],"r8gd.2xlarge":[4,15,8,65536],"r8gd.48xlarge":[15,50,192,1572864],"r8gd.4xlarge":[8,30,16,131072],"r8gd.8xlarge":[8,30,32,262144],"r8gd.large":[3,10,2,16384],"r8gd.medium":[2,4,1,8192],"r8gd.metal-24xl":[15,50,96,786432],"r8gd.metal-48xl":[15,50,192,1572864],"r8gd.xlarge":[4,15,4,32768],"r8gn.12xlarge":[12,30,48,393216],"r8gn.16xlarge":[16,50,64,524288],"r8gn.24xlarge":[24,50,96,786432],"r8gn.2xlarge":[4,15,8,65536],"r8gn.48xlarge":[12,50,192,1572864],"r8gn.4xlarge":[8,30,16,131072],"r8gn.8xlarge":[10,30,32,262144],"r8gn.large":[3,10,2,16384],"r8gn.medium":[2,4,1,8192],"r8gn.metal-24xl":[24,50,96,786432],"r8gn.metal-48xl":[12,50,192,1572864],"r8gn.xlarge":[4,15,4,32768],"r8i-flex.12xlarge":[12,50,48,393216],"r8i-flex.16xlarge":[16,64,64,524288],"r8i-flex.2xlarge":[4,30,8,65536],"r8i-flex.4xlarge":[8,50,16,131072],"r8i-flex.8xlarge":[10,50,32,262144],"r8i-flex.large":[3,20,2,16384],"r8i-flex.xlarge":[4,30,4,32768],"r8i.12xlarge":[12,50,48,393216],"r8i.16xlarge":[16,64,64,524288],"r8i.24xlarge":[16,64,96,786432],"r8i.2xlarge":[4,30,8,65536],"r8i.32xlarge":[24,64,128,1048576],"r8i.48xlarge":[24,64,192,1572864],"r8i.4xlarge":[8,50,16,131072],"r8i.8xlarge":[10,50,32,262144],"r8i.96xlarge":[24,64,384,3145728],"r8i.large":[3,20,2,16384],"r8i.metal-48xl":[24,64,192,1572864],"r8i.metal-96xl":[24,64,384,3145728],"r8i.xlarge":[4,30,4,32768],"r8ib.12xlarge":[12,50,48,393216],"r8ib.16xlarge":[16,64,64,524288],"r8ib.24xlarge":[16,64,96,786432],"r8ib.2xlarge":[4,30,8,65536],"r8ib.32xlarge":[16,64,128,1048576],"r8ib.48xlarge":[24,64,192,1572864],"r8ib.4xlarge":[8,50,16,131072],"r8ib.8xlarge":[8,50,32,262144],"r8ib.96xlarge":[12,64,384,3145728],"r8ib.large":[4,20,2,16384],"r8ib.metal-48xl":[24,64,192,1572864],"r8ib.metal-96xl":[12,64,384,3145728],"r8ib.xlarge":[4,30,4,32768],"r8id.12xlarge":[12,50,48,393216],"r8id.16xlarge":[16,64,64,524288],"r8id.24xlarge":[16,64,96,786432],"r8id.2xlarge":[4,30,8,65536],"r8id.32xlarge":[24,64,128,1048576],"r8id.48xlarge":[24,64,192,1572864],"r8id.4xlarge":[8,50,16,131072],"r8id.8xlarge":[10,50,32,262144],"r8id.96xlarge":[24,64,384,3145728],"r8id.large":[3,20,2,16384],"r8id.metal-48xl":[24,64,192,1572864],"r8id.metal-96xl":[24,64,384,3145728],"r8id.xlarge":[4,30,4,32768],"r8idb.12xlarge":[12,50,48,393216],"r8idb.16xlarge":[16,64,64,524288],"r8idb.24xlarge":[16,64,96,786432],"r8idb.2xlarge":[4,30,8,65536],"r8idb.32xlarge":[16,64,128,1048576],"r8idb.48xlarge":[24,64,192,1572864],"r8idb.4xlarge":[8,50,16,131072],"r8idb.8xlarge":[8,50,32,262144],"r8idb.96xlarge":[12,64,384,3145728],"r8idb.large":[4,20,2,16384],"r8idb.metal-48xl":[24,64,192,1572864],"r8idb.metal-96xl":[12,64,384,3145728],"r8idb.xlarge":[4,30,4,32768],"r8idn.12xlarge":[12,50,48,393216],"r8idn.16xlarge":[16,64,64,524288],"r8idn.24xlarge":[16,64,96,786432],"r8idn.2xlarge":[4,30,8,65536],"r8idn.32xlarge":[16,64,128,1048576],"r8idn.48xlarge":[24,64,192,1572864],"r8idn.4xlarge":[8,50,16,131072],"r8idn.8xlarge":[8,50,32,262144],"r8idn.96xlarge":[12,64,384,3145728],"r8idn.large":[4,20,2,16384],"r8idn.metal-48xl":[24,64,192,1572864],"r8idn.metal-96xl":[12,64,384,3145728],"r8idn.xlarge":[4,30,4,32768],"r8in.12xlarge":[12,50,48,393216],"r8in.16xlarge":[16,64,64,524288],"r8in.24xlarge":[16,64,96,786432],"r8in.2xlarge":[4,30,8,65536],"r8in.32xlarge":[16,64,128,1048576],"r8in.48xlarge":[24,64,192,1572864],"r8in.4xlarge":[8,50,16,131072],"r8in.8xlarge":[8,50,32,262144],"r8in.96xlarge":[12,64,384,3145728],"r8in.large":[4,20,2,16384],"r8in.metal-48xl":[24,64,192,1572864],"r8in.metal-96xl":[12,64,384,3145728],"r8in.xlarge":[4,30,4,32768],"r9g.12xlarge":[12,50,48,393216],"r9g.16xlarge":[16,64,64,524288],"r9g.24xlarge":[24,64,96,786432],"r9g.2xlarge":[4,30,8,65536],"r9g.48xlarge":[24,64,192,1572864],"r9g.4xlarge":[8,50,16,131072],"r9g.8xlarge":[10,50,32,262144],"r9g.large":[3,20,2,16384],"r9g.medium":[2,20,1,8192],"r9g.metal-48xl":[24,64,192,1572864],"r9g.xlarge":[4,30,4,32768],"r9gd.12xlarge":[12,50,48,393216],"r9gd.16xlarge":[16,64,64,524288],"r9gd.24xlarge":[24,64,96,786432],"r9gd.2xlarge":[4,30,8,65536],"r9gd.48xlarge":[24,64,192,1572864],"r9gd.4xlarge":[8,50,16,131072],"r9gd.8xlarge":[10,50,32,262144],"r9gd.large":[3,20,2,16384],"r9gd.medium":[2,20,1,8192],"r9gd.metal-48xl":[24,64,192,1572864],"r9gd.xlarge":[4,30,4,32768],"t1.micro":[2,2,1,627],"t2.2xlarge":[3,15,8,32768],"t2.large":[3,12,2,8192],"t2.medium":[3,6,2,4096],"t2.micro":[2,2,1,1024],"t2.nano":[2,2,1,512],"t2.small":[3,4,1,2048],"t2.xlarge":[3,15,4,16384],"t3.2xlarge":[4,15,8,32768],"t3.large":[3,12,2,8192],"t3.medium":[3,6,2,4096],"t3.micro":[2,2,2,1024],"t3.nano":[2,2,2,512],"t3.small":[3,4,2,2048],"t3.xlarge":[4,15,4,16384],"t3a.2xlarge":[4,15,8,32768],"t3a.large":[3,12,2,8192],"t3a.medium":[3,6,2,4096],"t3a.micro":[2,2,2,1024],"t3a.nano":[2,2,2,512],"t3a.small":[2,4,2,2048],"t3a.xlarge":[4,15,4,16384],"t4g.2xlarge":[4,15,8,32768],"t4g.large":[3,12,2,8192],"t4g.medium":[3,6,2,4096],"t4g.micro":[2,2,2,1024],"t4g.nano":[2,2,2,512],"t4g.small":[3,4,2,2048],"t4g.xlarge":[4,15,4,16384],"t8i.medium":[3,6,2,4096],"t8i.micro":[2,2,2,1024],"t8i.nano":[2,2,2,512],"t8i.small":[3,4,2,2048],"trn1.2xlarge":[4,15,8,32768],"trn1.32xlarge":[5,50,128,524288],"trn1n.32xlarge":[5,50,128,524288],"trn2.3xlarge":[2,15,12,131072],"trn2.48xlarge":[2,50,192,2097152],"u-12tb1.metal":[5,30,448,12582912],"u-18tb1.metal":[15,50,448,18874368],"u-24tb1.metal":[15,50,448,25165824],"u-3tb1.56xlarge":[8,30,224,3145728],"u-6tb1.112xlarge":[15,50,448,6291456],"u-6tb1.56xlarge":[15,50,224,6291456],"u-6tb1.metal":[5,30,448,6291456],"u-9tb1.metal":[5,30,448,9437184],"u7i-12tb.224xlarge":[15,50,896,12582912],"u7i-6tb.112xlarge":[15,50,448,6291456],"u7i-8tb.112xlarge":[15,50,448,8388608],"u7in-16tb.224xlarge":[8,50,896,16777216],"u7in-24tb.224xlarge":[8,50,896,25165824],"u7in-32tb.224xlarge":[8,50,896,33554432],"vt1.24xlarge":[15,50,96,196608],"vt1.3xlarge":[4,15,12,24576],"vt1.6xlarge":[8,30,24,49152],"x1.16xlarge":[8,30,64,999424],"x1.32xlarge":[8,30,128,1998848],"x1e.16xlarge":[8,30,64,1998848],"x1e.2xlarge":[4,15,8,249856],"x1e.32xlarge":[8,30,128,3997696],"x1e.4xlarge":[4,15,16,499712],"x1e.8xlarge":[4,15,32,999424],"x1e.xlarge":[3,10,4,124928],"x2gd.12xlarge":[8,30,48,786432],"x2gd.16xlarge":[15,50,64,1048576],"x2gd.2xlarge":[4,15,8,131072],"x2gd.4xlarge":[8,30,16,262144],"x2gd.8xlarge":[8,30,32,524288],"x2gd.large":[3,10,2,32768],"x2gd.medium":[2,4,1,16384],"x2gd.metal":[15,50,64,1048576],"x2gd.xlarge":[4,15,4,65536],"x2idn.16xlarge":[15,50,64,1048576],"x2idn.24xlarge":[15,50,96,1572864],"x2idn.32xlarge":[15,50,128,2097152],"x2idn.metal":[15,50,128,2097152],"x2iedn.16xlarge":[15,50,64,2097152],"x2iedn.24xlarge":[15,50,96,3145728],"x2iedn.2xlarge":[4,15,8,262144],"x2iedn.32xlarge":[15,50,128,4194304],"x2iedn.4xlarge":[8,30,16,524288],"x2iedn.8xlarge":[8,30,32,1048576],"x2iedn.metal":[15,50,128,4194304],"x2iedn.xlarge":[4,15,4,131072],"x2iezn.12xlarge":[15,50,48,1572864],"x2iezn.2xlarge":[4,15,8,262144],"x2iezn.4xlarge":[8,30,16,524288],"x2iezn.6xlarge":[8,30,24,786432],"x2iezn.8xlarge":[8,30,32,1048576],"x2iezn.metal":[15,50,48,1572864],"x8aedz.12xlarge":[16,64,48,1572864],"x8aedz.24xlarge":[16,64,96,3145728],"x8aedz.3xlarge":[8,40,12,393216],"x8aedz.6xlarge":[8,40,24,786432],"x8aedz.large":[4,20,2,65536],"x8aedz.metal-12xl":[16,64,48,1572864],"x8aedz.metal-24xl":[16,64,96,3145728],"x8aedz.xlarge":[4,20,4,131072],"x8g.12xlarge":[8,30,48,786432],"x8g.16xlarge":[15,50,64,1048576],"x8g.24xlarge":[15,50,96,1572864],"x8g.2xlarge":[4,15,8,131072],"x8g.48xlarge":[15,50,192,3145728],"x8g.4xlarge":[8,30,16,262144],"x8g.8xlarge":[8,30,32,524288],"x8g.large":[3,10,2,32768],"x8g.medium":[2,4,1,16384],"x8g.metal-24xl":[15,50,96,1572864],"x8g.metal-48xl":[15,50,192,3145728],"x8g.xlarge":[4,15,4,65536],"x8i.12xlarge":[12,50,48,786432],"x8i.16xlarge":[16,64,64,1048576],"x8i.24xlarge":[16,64,96,1572864],"x8i.2xlarge":[4,30,8,131072],"x8i.32xlarge":[24,64,128,2097152],"x8i.48xlarge":[24,64,192,3145728],"x8i.4xlarge":[8,50,16,262144],"x8i.64xlarge":[24,64,256,4194304],"x8i.8xlarge":[10,50,32,524288],"x8i.96xlarge":[24,64,384,6291456],"x8i.large":[3,20,2,32768],"x8i.metal-48xl":[24,64,192,3145728],"x8i.metal-96xl":[24,64,384,6291456],"x8i.xlarge":[4,30,4,65536],"z1d.12xlarge":[15,50,48,393216],"z1d.2xlarge":[4,15,8,65536],"z1d.3xlarge":[8,30,12,98304],"z1d.6xlarge":[8,30,24,196608],"z1d.large":[3,10,2,16384],"z1d.metal":[15,50,48,393216],"z1d.xlarge":[4,15,4,32768]}}</script>
+<script>
+/*
+ * Kubernetes IP and node-sizing engine for EKS, GKE and AKS.
+ * Pure functions, no DOM. Works in Node (module.exports) and in the browser (window.K8sIP).
+ *
+ * Every rule carries the official source it came from (see RULES below). Numbers that come from a
+ * provider table (EKS instance ENI/IP limits) are loaded from data/eks-instances.json, which is
+ * generated from awslabs/amazon-eks-ami nodeadm/internal/kubelet/instance-info.jsonl.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.K8sIP = factory();
+}(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // ---------------------------------------------------------------- sources
+  const RULES = {
+    eksMaxPodsFormula: { text: 'maxPods = ENIs x (IPs per ENI - 1) + 2', url: 'https://docs.aws.amazon.com/eks/latest/userguide/choosing-instance-type.html' },
+    eksManagedCap: { text: 'Managed node groups cap maxPods at 110 (< 30 vCPU) or 250 (> 30 vCPU)', url: 'https://docs.aws.amazon.com/eks/latest/userguide/choosing-instance-type.html' },
+    eksPrefix: { text: 'Prefix delegation assigns /28 (16 address) prefixes to ENI slots', url: 'https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-linux.html' },
+    eksWarmEni: { text: 'WARM_ENI_TARGET default 1: the CNI keeps one spare ENI with all its IPs allocated', url: 'https://github.com/aws/amazon-vpc-cni-k8s/blob/master/README.md' },
+    eksWarmPrefix: { text: 'WARM_PREFIX_TARGET default 1 in the installation manifest', url: 'https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-linux.html' },
+    eksControlPlane: { text: 'Cluster subnets need at least 6 free IPs each (16 recommended), in at least 2 Availability Zones', url: 'https://docs.aws.amazon.com/eks/latest/userguide/network-reqs.html' },
+    eksServiceCidr: { text: 'Service CIDR: inside 10.0.0.0/8, 172.16.0.0/12 or 192.168.0.0/16; between /24 and /12; must not overlap the VPC', url: 'https://docs.aws.amazon.com/eks/latest/APIReference/API_KubernetesNetworkConfigRequest.html' },
+    eksReserved: { text: 'AWS reserves the first four and the last address of every subnet; subnets are /28 to /16', url: 'https://docs.aws.amazon.com/vpc/latest/userguide/subnet-sizing.html' },
+    gkeNodeRange: { text: 'Node Pod range M = 31 - ceil(log2(maxPodsPerNode)); 8..256 pods per node, default 110, Autopilot fixed 32', url: 'https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr' },
+    gkeNodePoolMin: { text: 'A node pool Pod secondary range must be at least /24', url: 'https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr' },
+    gkePrimary: { text: 'Usable primary addresses = 2^(32-S) - 4; smallest primary range /29, largest /9', url: 'https://cloud.google.com/kubernetes-engine/docs/concepts/alias-ips' },
+    gkeServices: { text: 'Services: GKE-managed 34.118.224.0/20 by default on new clusters, else a secondary range /24 to /16 (default /20)', url: 'https://cloud.google.com/kubernetes-engine/docs/concepts/alias-ips' },
+    aksFormula: { text: 'Azure CNI node subnet: (nodes + surge) + (nodes + surge) x maxPods; default maxPods 30, default surge 1', url: 'https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning' },
+    aksMaxPods: { text: 'maxPods defaults: Overlay 250, Pod Subnet 110, Azure CNI (legacy) 30, kubenet 110; range 10..250', url: 'https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning' },
+    aksOverlay: { text: 'Overlay: each node gets a /24 (256 addresses) from the pod CIDR, default 10.244.0.0/16', url: 'https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning' },
+    aksPodSubnet: { text: 'Pod Subnet: IPs allocated to nodes in batches of 16, next batch when fewer than 8 remain; pod subnets up to /16', url: 'https://learn.microsoft.com/en-us/azure/aks/configure-azure-cni-dynamic-ip-allocation' },
+    aksServices: { text: 'Service CIDR default 10.0.0.0/16; must not overlap the VNet', url: 'https://learn.microsoft.com/en-us/azure/aks/azure-cni-overlay' },
+    azureReserved: { text: 'Azure reserves the first four and the last address of every subnet; smallest subnet /29', url: 'https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq' },
+  };
+
+  // ---------------------------------------------------------------- ip helpers
+  const log2ceil = n => (n <= 1 ? 0 : Math.ceil(Math.log2(n)));
+  const pow2 = p => Math.pow(2, p);
+  const ip2n = ip => ip.trim().split('.').reduce((a, o) => a * 256 + (+o), 0);
+  const n2ip = n => [24, 16, 8, 0].map(s => Math.floor(n / pow2(s)) % 256).join('.');
+  const isIp = s => /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(String(s).trim());
+  function parseCidr(s) {
+    const m = String(s || '').trim().match(/^([\d.]+)\/(\d{1,2})$/);
+    if (!m || !isIp(m[1]) || +m[2] > 32) return null;
+    const p = +m[2], size = pow2(32 - p), base = Math.floor(ip2n(m[1]) / size) * size;
+    return { base, prefix: p, size, cidr: n2ip(base) + '/' + p, aligned: base === ip2n(m[1]) };
+  }
+  const overlaps = (a, b) => a.base < b.base + b.size && b.base < a.base + a.size;
+  const within = (inner, outer) => inner.base >= outer.base && inner.base + inner.size <= outer.base + outer.size;
+  // smallest prefix whose usable count (size - reserved) covers `need`, clamped to [minPrefix, maxPrefix] (numerically)
+  function prefixFor(need, reserved, smallestPrefix, largestPrefix) {
+    let p = smallestPrefix; // e.g. 28 (smallest allowed subnet)
+    while (p > largestPrefix && pow2(32 - p) - reserved < need) p--;
+    const usable = pow2(32 - p) - reserved;
+    return { prefix: p, size: pow2(32 - p), usable, fits: usable >= need };
+  }
+
+  // ---------------------------------------------------------------- EKS
+  let EKS_DATA = null; // { meta, instances: { type: [enis, ips, vcpus, memMib] } }
+  function loadEks(data) { EKS_DATA = data; return EKS_DATA; }
+  function eksInstance(type) {
+    if (!EKS_DATA) throw new Error('EKS instance data not loaded; call loadEks(json) first');
+    const r = EKS_DATA.instances[String(type || '').trim().toLowerCase()];
+    if (!r) return null;
+    return { type: String(type).trim().toLowerCase(), enis: r[0], ipsPerEni: r[1], vcpus: r[2], memMib: r[3] };
+  }
+  function eksInstanceTypes() { return EKS_DATA ? Object.keys(EKS_DATA.instances) : []; }
+  const eksCap = vcpus => (vcpus < 30 ? 110 : 250);
+
+  // maxPods for an instance in secondary-IP or prefix mode, with the managed-node-group cap
+  function eksMaxPods(type, o) {
+    o = o || {};
+    const i = typeof type === 'string' ? eksInstance(type) : type;
+    if (!i) return null;
+    const slots = i.enis * (i.ipsPerEni - 1);
+    const eniFormula = slots + 2;
+    const prefixFormula = slots * 16 + 2;
+    const cap = eksCap(i.vcpus);
+    const managed = o.managed !== false;
+    let maxPods, rule;
+    if (o.prefixDelegation) { maxPods = Math.min(prefixFormula, cap); rule = maxPods === cap ? 'cap' : 'prefix'; }
+    else if (managed) { maxPods = Math.min(eniFormula, cap); rule = maxPods === cap && eniFormula > cap ? 'cap' : 'eni'; }
+    else { maxPods = eniFormula; rule = 'eni'; }
+    return { instance: i, eniFormula, prefixFormula, cap, managed, prefixDelegation: !!o.prefixDelegation, maxPods, rule };
+  }
+
+  // VPC addresses one node takes from its subnet when it runs `pods` pods
+  function eksPerNodeIps(type, o) {
+    o = o || {};
+    const i = typeof type === 'string' ? eksInstance(type) : type;
+    if (!i) return null;
+    const mp = eksMaxPods(i, o);
+    const pods = Math.min(o.pods == null ? mp.maxPods : o.pods, mp.maxPods);
+    const slotsPerEni = i.ipsPerEni - 1;
+    if (o.prefixDelegation) {
+      const warm = o.warmPrefixTarget == null ? 1 : o.warmPrefixTarget;
+      const prefixesNeeded = Math.max(1, Math.ceil(pods / 16));
+      const prefixes = Math.min(prefixesNeeded + warm, i.enis * slotsPerEni);
+      const enisUsed = Math.max(1, Math.ceil(prefixes / slotsPerEni));
+      const ips = prefixes * 16 + enisUsed; // one primary IP per attached ENI plus the /28 prefixes
+      const worst = i.enis * slotsPerEni * 16 + i.enis;
+      return { mode: 'prefix', pods, prefixes, enisUsed, ips, worst, maxPods: mp.maxPods, note: 'prefixes x 16 + one primary IP per ENI; WARM_PREFIX_TARGET ' + warm };
+    }
+    const warm = o.warmEniTarget == null ? 1 : o.warmEniTarget;
+    const enisForPods = Math.max(1, Math.ceil(Math.max(pods - 2, 0) / slotsPerEni));
+    const enisUsed = Math.min(i.enis, enisForPods + warm);
+    const ips = enisUsed * i.ipsPerEni; // in secondary-IP mode the CNI allocates every address of an attached ENI
+    const worst = i.enis * i.ipsPerEni;
+    return { mode: 'secondary', pods, enisUsed, ips, worst, maxPods: mp.maxPods, note: 'attached ENIs x IPs per ENI; WARM_ENI_TARGET ' + warm };
+  }
+
+  function eksServiceCidrCheck(cidr, vpcCidrs) {
+    const c = parseCidr(cidr);
+    const items = [];
+    if (!c) return { ok: false, items: [{ k: 'bad', t: 'not a CIDR', d: String(cidr) }] };
+    const rfc = ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'].map(parseCidr);
+    if (!rfc.some(r => within(c, r))) items.push({ k: 'bad', t: 'outside the private ranges', d: 'EKS requires the service CIDR inside 10.0.0.0/8, 172.16.0.0/12 or 192.168.0.0/16.' });
+    if (c.prefix < 12 || c.prefix > 24) items.push({ k: 'bad', t: 'prefix /' + c.prefix + ' not allowed', d: 'The service CIDR must be between /24 and /12.' });
+    for (const v of (vpcCidrs || []).map(parseCidr).filter(Boolean)) {
+      if (overlaps(c, v)) items.push({ k: 'bad', t: 'overlaps ' + v.cidr, d: 'The service CIDR must not overlap any CIDR of the cluster VPC. Services will shadow those addresses.' });
+    }
+    if (!c.aligned) items.push({ k: 'warn', t: 'not aligned', d: 'The address is not the first of its block; AWS will reject it. Use ' + c.cidr + '.' });
+    return { ok: !items.some(x => x.k === 'bad'), cidr: c.cidr, items };
+  }
+
+  // Full EKS plan: subnet per AZ for nodes + pods, with growth and control-plane headroom
+  function eksPlan(o) {
+    const i = eksInstance(o.type);
+    if (!i) return { error: 'unknown instance type ' + o.type };
+    const azs = Math.max(1, +o.azs || 2);
+    const nodesPerAz = Math.max(1, +o.nodesPerAz || 1);
+    const growth = Math.max(0, +o.growthPct || 0) / 100;
+    const cp = o.controlPlaneIps == null ? 16 : +o.controlPlaneIps;
+    const mp = eksMaxPods(i, o);
+    const pods = o.podsPerNode == null || o.podsPerNode === '' ? mp.maxPods : Math.min(+o.podsPerNode, mp.maxPods);
+    const per = eksPerNodeIps(i, Object.assign({}, o, { pods }));
+    const nodesPlanned = Math.ceil(nodesPerAz * (1 + growth));
+    const need = nodesPlanned * per.ips + cp;
+    const needWorst = nodesPlanned * per.worst + cp;
+    const sub = prefixFor(need, 5, 28, 16);
+    const subWorst = prefixFor(needWorst, 5, 28, 16);
+    const items = [];
+    if (azs < 2) items.push({ k: 'bad', t: 'one Availability Zone', d: 'EKS needs subnets in at least two Availability Zones.', src: 'eksControlPlane' });
+    if (!sub.fits) items.push({ k: 'bad', t: 'does not fit a /16', d: need + ' addresses per zone exceed the largest AWS subnet. Split the node group or use prefix delegation.', src: 'eksReserved' });
+    if (o.prefixDelegation) items.push({ k: 'info', t: 'prefix delegation needs contiguous /28 blocks', d: 'Prefixes come from free, aligned 16-address blocks. A fragmented subnet makes prefix attachment fail; reserve space with a subnet CIDR reservation or use a fresh subnet.', src: 'eksPrefix' });
+    if (!o.prefixDelegation && (+o.podsPerNode || 0) > mp.eniFormula) items.push({ k: 'warn', t: 'pods per node above the ENI limit', d: 'This instance type supports ' + mp.eniFormula + ' pods without prefix delegation. Turn prefix delegation on or pick a bigger type.', src: 'eksMaxPodsFormula' });
+    if (mp.rule === 'cap') items.push({ k: 'info', t: 'managed node group cap ' + mp.cap, d: 'Managed node groups cap maxPods at ' + mp.cap + ' for this instance size; the formula alone would allow ' + (o.prefixDelegation ? mp.prefixFormula : mp.eniFormula) + '.', src: 'eksManagedCap' });
+    if (!o.prefixDelegation && per.ips > pods * 1.5 && pods >= 10) items.push({ k: 'info', t: 'warm pool is ' + (per.ips - pods) + ' addresses per node', d: 'With WARM_ENI_TARGET 1 each node holds a whole spare ENI. Set WARM_IP_TARGET and MINIMUM_IP_TARGET to shrink it.', src: 'eksWarmEni' });
+    const perZoneUsable = sub.usable;
+    return {
+      cloud: 'eks', instance: i, maxPods: mp, podsPerNode: pods, perNode: per, azs, nodesPerAz, nodesPlanned,
+      perZone: { need, needWorst, prefix: sub.prefix, usable: perZoneUsable, prefixWorst: subWorst.prefix },
+      totals: { nodes: nodesPlanned * azs, pods: nodesPlanned * azs * pods, addresses: pow2(32 - sub.prefix) * azs },
+      items, rules: ['eksMaxPodsFormula', 'eksManagedCap', 'eksControlPlane', 'eksReserved'].concat(o.prefixDelegation ? ['eksPrefix', 'eksWarmPrefix'] : ['eksWarmEni']),
+    };
+  }
+
+  // ---------------------------------------------------------------- GKE
+  function gkeNodeRangePrefix(q) { return 31 - log2ceil(q); } // Q=110 -> /24, 8 -> /28, 256 -> /23
+  function gkePlan(o) {
+    const autopilot = !!o.autopilot;
+    let q = autopilot ? 32 : (+o.podsPerNode || 110);
+    const items = [];
+    if (!autopilot && (q < 8 || q > 256)) { items.push({ k: 'bad', t: 'pods per node out of range', d: 'GKE Standard accepts 8 to 256 Pods per node.', src: 'gkeNodeRange' }); q = Math.min(256, Math.max(8, q)); }
+    const nodes = Math.max(1, +o.nodes || 1);
+    const surge = o.surge == null ? 1 : Math.max(0, +o.surge);
+    const growth = Math.max(0, +o.growthPct || 0) / 100;
+    const nodesPlanned = Math.ceil(nodes * (1 + growth)) + surge;
+    const M = gkeNodeRangePrefix(q);
+    const HM = 32 - M;
+    const podRangePrefix = Math.max(9, 32 - (HM + log2ceil(nodesPlanned)));
+    const podPoolPrefix = Math.min(podRangePrefix, 24); // a node pool range cannot be smaller than /24
+    const maxNodesInPodRange = pow2(32 - podPoolPrefix - HM);
+    const primary = prefixFor(nodesPlanned, 4, 29, 9);
+    const servicesManaged = o.servicesManaged !== false;
+    const servicesPrefix = servicesManaged ? null : (+o.servicesPrefix || 20);
+    if (podRangePrefix > 24) items.push({ k: 'info', t: 'Pod range rounded up to /24', d: 'The arithmetic needs only a /' + podRangePrefix + ' but a node pool Pod range must be at least /24.', src: 'gkeNodePoolMin' });
+    if (servicesManaged) items.push({ k: 'info', t: 'Services from the GKE-managed range', d: 'New clusters take Service IPs from 34.118.224.0/20 and need no Services secondary range in your subnet.', src: 'gkeServices' });
+    if (q > 110 && !autopilot) items.push({ k: 'warn', t: q + ' Pods per node', d: 'Above the 110 default each node reserves a /' + M + ' (' + pow2(HM) + ' addresses). Check kubelet and node resources before raising density.', src: 'gkeNodeRange' });
+    return {
+      cloud: 'gke', autopilot, podsPerNode: q, nodes, nodesPlanned, surge,
+      perNode: { prefix: M, addresses: pow2(HM) },
+      podRange: { prefix: podPoolPrefix, addresses: pow2(32 - podPoolPrefix), maxNodes: maxNodesInPodRange },
+      primary: { prefix: primary.prefix, usable: primary.usable, fits: primary.fits },
+      services: servicesManaged ? { managed: true, range: '34.118.224.0/20' } : { managed: false, prefix: servicesPrefix, count: pow2(32 - servicesPrefix) },
+      totals: { pods: nodesPlanned * q },
+      items, rules: ['gkeNodeRange', 'gkeNodePoolMin', 'gkePrimary', 'gkeServices'],
+    };
+  }
+
+  // ---------------------------------------------------------------- AKS
+  const AKS_MODES = {
+    overlay: { label: 'Azure CNI Overlay', defaultMaxPods: 250 },
+    podsubnet: { label: 'Azure CNI Pod Subnet (dynamic IP allocation)', defaultMaxPods: 110 },
+    nodesubnet: { label: 'Azure CNI node subnet (legacy)', defaultMaxPods: 30 },
+    kubenet: { label: 'kubenet', defaultMaxPods: 110 },
+  };
+  function aksPlan(o) {
+    const mode = AKS_MODES[o.mode] ? o.mode : 'overlay';
+    const m = AKS_MODES[mode];
+    const items = [];
+    let maxPods = o.maxPods == null || o.maxPods === '' ? m.defaultMaxPods : +o.maxPods;
+    if (maxPods < 10 || maxPods > 250) { items.push({ k: 'bad', t: 'maxPods out of range', d: 'AKS accepts 10 to 250 pods per node.', src: 'aksMaxPods' }); maxPods = Math.min(250, Math.max(10, maxPods)); }
+    const nodes = Math.max(1, +o.nodes || 1);
+    const surge = o.surge == null ? 1 : Math.max(0, +o.surge);
+    const growth = Math.max(0, +o.growthPct || 0) / 100;
+    const n = Math.ceil(nodes * (1 + growth)) + surge;
+    let nodeNeed, podSpace = null;
+    if (mode === 'nodesubnet') nodeNeed = n + n * maxPods;
+    else nodeNeed = n;
+    const nodeSubnet = prefixFor(nodeNeed, 5, 29, 2);
+    if (mode === 'overlay' || mode === 'kubenet') {
+      const podPrefix = Math.max(8, 32 - (8 + log2ceil(n)));
+      podSpace = { kind: mode === 'overlay' ? 'pod CIDR (overlay, not VNet space)' : 'pod CIDR (kubenet, not VNet space)', perNode: 256, prefix: podPrefix, maxNodes: pow2(32 - podPrefix - 8), default: '10.244.0.0/16', defaultMaxNodes: 256 };
+      if (n > 256) items.push({ k: 'warn', t: 'default pod CIDR holds 256 nodes', d: 'A /24 per node from 10.244.0.0/16 stops at 256 nodes. Set --pod-cidr to a /' + podPrefix + ' or larger.', src: 'aksOverlay' });
+    } else if (mode === 'podsubnet') {
+      const perNode = Math.ceil(maxPods / 16) * 16 + 16; // batches of 16, next batch requested when fewer than 8 remain
+      const need = n * perNode;
+      const ps = prefixFor(need, 5, 29, 16);
+      podSpace = { kind: 'pod subnet (VNet space)', perNode, need, prefix: ps.prefix, usable: ps.usable, fits: ps.fits };
+      if (!ps.fits) items.push({ k: 'bad', t: 'pod subnet larger than /16', d: 'Dynamic IP allocation supports pod subnets up to /16 (about 65,000 pods). Split across node pools or use static block allocation.', src: 'aksPodSubnet' });
+    }
+    if (mode === 'nodesubnet') items.push({ k: 'info', t: 'every pod takes a VNet address up front', d: 'Legacy Azure CNI pre-assigns maxPods addresses to each node whether pods run or not: ' + n + ' nodes x (1 + ' + maxPods + ') = ' + nodeNeed + '.', src: 'aksFormula' });
+    if (mode === 'kubenet') items.push({ k: 'warn', t: 'kubenet is on the retirement path', d: 'Microsoft recommends Azure CNI Overlay for new clusters; kubenet nodes also need a route table entry per node.', src: 'aksMaxPods' });
+    if (maxPods === 10 && nodes < 3) items.push({ k: 'bad', t: 'maxPods 10 needs 3 nodes per pool', d: 'The minimum of 10 is allowed only when each node pool has room for 30 pods.', src: 'aksMaxPods' });
+    return {
+      cloud: 'aks', mode, modeLabel: m.label, maxPods, nodes, surge, nodesPlanned: n,
+      nodeSubnet: { need: nodeNeed, prefix: nodeSubnet.prefix, usable: nodeSubnet.usable, fits: nodeSubnet.fits },
+      podSpace, services: { default: '10.0.0.0/16' },
+      totals: { pods: n * maxPods },
+      items, rules: ['aksFormula', 'aksMaxPods', 'azureReserved'].concat(mode === 'overlay' ? ['aksOverlay'] : mode === 'podsubnet' ? ['aksPodSubnet'] : []),
+    };
+  }
+
+  function plan(cloud, o) {
+    if (cloud === 'eks') return eksPlan(o);
+    if (cloud === 'gke') return gkePlan(o);
+    if (cloud === 'aks') return aksPlan(o);
+    return { error: 'unknown cloud ' + cloud };
+  }
+
+  return {
+    RULES, AKS_MODES, ip2n, n2ip, parseCidr, overlaps, within, prefixFor, log2ceil,
+    loadEks, eksInstance, eksInstanceTypes, eksCap, eksMaxPods, eksPerNodeIps, eksServiceCidrCheck, eksPlan,
+    gkeNodeRangePrefix, gkePlan, aksPlan, plan,
+  };
+}));
+
+</script>
+<script>
+(function(){
+'use strict';
+const E = window.K8sIP;
+E.loadEks(JSON.parse(document.getElementById('eksData').textContent));
+const $ = id => document.getElementById(id);
+const fmt = n => (n == null ? '-' : Number(n).toLocaleString('en-US'));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ------------------------------------------------------------ state
+const S = window.S = {
+  cloud: 'eks', tab: 'tf',
+  eks: { type: 'm5.large', nodesAz: 5, azs: 3, pods: '', prefix: false, managed: true, cp: 16, svc: '172.20.0.0/16', vpcs: '10.0.0.0/16' },
+  gke: { autopilot: false, nodes: 30, pods: 110, svcManaged: true, svcPrefix: 20 },
+  aks: { mode: 'overlay', nodes: 20, pods: '' },
+  surge: 1, growth: 0,
+};
+const PRESETS = {
+  eks: [
+    { l: 'Small prod: 3 × m5.large per zone', s: { type: 'm5.large', nodesAz: 3, azs: 3, pods: '', prefix: false } },
+    { l: 'Dense: m5.2xlarge, 110 pods, prefix delegation', s: { type: 'm5.2xlarge', nodesAz: 10, azs: 3, pods: 110, prefix: true } },
+    { l: 'Batch: 50 × c5.4xlarge per zone', s: { type: 'c5.4xlarge', nodesAz: 50, azs: 2, pods: '', prefix: false } },
+    { l: 'Graviton: m7g.large, 2 zones', s: { type: 'm7g.large', nodesAz: 4, azs: 2, pods: '', prefix: false } },
+  ],
+  gke: [
+    { l: 'Standard, 30 nodes, 110 pods', s: { autopilot: false, nodes: 30, pods: 110 } },
+    { l: 'Autopilot, 50 nodes', s: { autopilot: true, nodes: 50 } },
+    { l: 'IP-constrained: 32 pods per node', s: { autopilot: false, nodes: 100, pods: 32 } },
+    { l: 'Doc example: 900 nodes × 110', s: { autopilot: false, nodes: 900, pods: 110 } },
+  ],
+  aks: [
+    { l: 'Overlay, 20 nodes (new-cluster default)', s: { mode: 'overlay', nodes: 20, pods: '' } },
+    { l: 'Pod Subnet, 10 nodes, 110 pods', s: { mode: 'podsubnet', nodes: 10, pods: 110 } },
+    { l: 'Doc example: legacy CNI, 50 nodes × 30', s: { mode: 'nodesubnet', nodes: 50, pods: 30 } },
+    { l: 'kubenet, 20 nodes', s: { mode: 'kubenet', nodes: 20, pods: '' } },
+  ],
+};
+const QUICK = ['t3.medium', 'm5.large', 'm5.xlarge', 'm5.2xlarge', 'm7g.large', 'c5.4xlarge', 'r5.2xlarge', 'm6i.8xlarge'];
+
+// ------------------------------------------------------------ share link
+function saveHash() {
+  try {
+    const o = { c: S.cloud, g: S.growth, s: S.surge };
+    if (S.cloud === 'eks') Object.assign(o, { i: S.eks.type, n: S.eks.nodesAz, z: S.eks.azs, q: S.eks.pods, x: S.eks.prefix ? 1 : 0, m: S.eks.managed ? 1 : 0, p: S.eks.cp, sc: S.eks.svc, vc: S.eks.vpcs });
+    if (S.cloud === 'gke') Object.assign(o, { a: S.gke.autopilot ? 1 : 0, n: S.gke.nodes, q: S.gke.pods, sm: S.gke.svcManaged ? 1 : 0, sp: S.gke.svcPrefix });
+    if (S.cloud === 'aks') Object.assign(o, { k: S.aks.mode, n: S.aks.nodes, q: S.aks.pods });
+    history.replaceState(null, '', '#' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, ''));
+  } catch (e) {}
+}
+function loadHash() {
+  const h = location.hash.slice(1); if (!h) return false;
+  let o; try { o = JSON.parse(decodeURIComponent(escape(atob(h)))); } catch (e) { toast('This link is damaged; showing the defaults'); return false; }
+  if (!o || typeof o !== 'object') return false;
+  S.cloud = ['eks', 'gke', 'aks'].includes(o.c) ? o.c : 'eks';
+  S.growth = +o.g || 0; S.surge = o.s == null ? 1 : +o.s;
+  if (S.cloud === 'eks') { if (o.i && E.eksInstance(o.i)) S.eks.type = o.i; S.eks.nodesAz = +o.n || 5; S.eks.azs = +o.z || 3; S.eks.pods = o.q === '' || o.q == null ? '' : +o.q; S.eks.prefix = !!o.x; S.eks.managed = o.m !== 0; S.eks.cp = +o.p === 6 ? 6 : 16; if (o.sc) S.eks.svc = String(o.sc); if (o.vc != null) S.eks.vpcs = String(o.vc); }
+  if (S.cloud === 'gke') { S.gke.autopilot = !!o.a; S.gke.nodes = +o.n || 30; S.gke.pods = +o.q || 110; S.gke.svcManaged = o.sm !== 0; S.gke.svcPrefix = +o.sp || 20; }
+  if (S.cloud === 'aks') { S.aks.mode = E.AKS_MODES[o.k] ? o.k : 'overlay'; S.aks.nodes = +o.n || 20; S.aks.pods = o.q === '' || o.q == null ? '' : +o.q; }
+  return true;
+}
+
+// ------------------------------------------------------------ inputs <-> state
+function pushInputs() {
+  document.body.dataset.cloud = S.cloud;
+  [...$('cloudSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.cloud));
+  $('inst').value = S.eks.type; $('nodesAz').value = S.eks.nodesAz; [...$('azSeg').children].forEach(b => b.classList.toggle('on', +b.dataset.v === S.eks.azs));
+  $('podsEks').value = S.eks.pods; $('cpIps').value = String(S.eks.cp); $('prefixSw').checked = S.eks.prefix; $('managedSw').checked = S.eks.managed; $('svcCidr').value = S.eks.svc; $('vpcCidrs').value = S.eks.vpcs;
+  [...$('gkeMode').children].forEach(b => b.classList.toggle('on', (b.dataset.v === 'autopilot') === S.gke.autopilot));
+  $('nodesGke').value = S.gke.nodes; $('podsGke').value = S.gke.pods; $('podsGke').disabled = S.gke.autopilot; $('svcManaged').checked = S.gke.svcManaged; $('svcPrefix').value = String(S.gke.svcPrefix); $('svcPrefixField').style.display = (S.cloud === 'gke' && !S.gke.svcManaged) ? 'flex' : 'none';
+  $('aksMode').value = S.aks.mode; $('nodesAks').value = S.aks.nodes; $('podsAks').value = S.aks.pods; $('aksPodsHint').textContent = 'Blank = plugin default (' + E.AKS_MODES[S.aks.mode].defaultMaxPods + '); range 10 to 250';
+  $('surge').value = S.surge; $('growth').value = S.growth;
+  const pr = $('presets'); pr.innerHTML = PRESETS[S.cloud].map((p, i) => '<button class="chip" data-preset="' + S.cloud + '-' + i + '">' + esc(p.l) + '</button>').join('');
+  pr.querySelectorAll('button').forEach((b, i) => b.onclick = () => { Object.assign(S[S.cloud], PRESETS[S.cloud][i].s); pushInputs(); update(); });
+}
+function pullInputs() {
+  const n = (id, d) => { const v = $(id).value.trim(); return v === '' ? d : Math.max(0, +v); };
+  S.eks.type = $('inst').value.trim().toLowerCase(); S.eks.nodesAz = n('nodesAz', 1) || 1; S.eks.pods = $('podsEks').value.trim() === '' ? '' : Math.max(1, +$('podsEks').value); S.eks.cp = +$('cpIps').value; S.eks.prefix = $('prefixSw').checked; S.eks.managed = $('managedSw').checked; S.eks.svc = $('svcCidr').value.trim(); S.eks.vpcs = $('vpcCidrs').value;
+  S.gke.nodes = n('nodesGke', 1) || 1; S.gke.pods = n('podsGke', 110) || 110; S.gke.svcManaged = $('svcManaged').checked; S.gke.svcPrefix = +$('svcPrefix').value;
+  S.aks.mode = $('aksMode').value; S.aks.nodes = n('nodesAks', 1) || 1; S.aks.pods = $('podsAks').value.trim() === '' ? '' : +$('podsAks').value;
+  S.surge = n('surge', 1); S.growth = n('growth', 0);
+}
+
+// ------------------------------------------------------------ compute + render
+let R = null;
+function compute() {
+  if (S.cloud === 'eks') return E.eksPlan({ type: S.eks.type, nodesPerAz: S.eks.nodesAz, azs: S.eks.azs, podsPerNode: S.eks.pods, prefixDelegation: S.eks.prefix, managed: S.eks.managed, growthPct: S.growth, controlPlaneIps: S.eks.cp });
+  if (S.cloud === 'gke') return E.gkePlan({ autopilot: S.gke.autopilot, nodes: S.gke.nodes, podsPerNode: S.gke.pods, surge: S.surge, growthPct: S.growth, servicesManaged: S.gke.svcManaged, servicesPrefix: S.gke.svcPrefix });
+  return E.aksPlan({ mode: S.aks.mode, nodes: S.aks.nodes, maxPods: S.aks.pods, surge: S.surge, growthPct: S.growth });
+}
+function update() {
+  pullInputs(); pushInputs(); saveHash();
+  R = compute();
+  $('inst').classList.toggle('bad', S.cloud === 'eks' && !!R.error);
+  if (R.error) { $('kpis').innerHTML = '<div class="kpi"><div class="v">?</div><div class="l">' + esc(R.error) + '</div><div class="s">Type an EC2 instance type such as m5.large, c6i.2xlarge or m7g.xlarge.</div></div>'; $('bar').innerHTML = ''; $('legend').innerHTML = ''; $('formula').textContent = ''; $('ranges').innerHTML = ''; $('checks').innerHTML = ''; $('code').textContent = ''; $('instHint').textContent = 'Unknown instance type'; return; }
+  if (S.cloud === 'eks') renderEks(R); else if (S.cloud === 'gke') renderGke(R); else renderAks(R);
+  renderChecks(R); renderCode();
+  renderSvc();
+}
+function kpi(v, l, s) { return '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>'; }
+function barSeg(cls, n, total, label) { return n > 0 ? '<span class="' + cls + '" style="flex:' + n + ' 1 0" title="' + esc(label + ': ' + fmt(n)) + '">' + (n / total > 0.08 ? fmt(n) : '') + '</span>' : ''; }
+function legend(items) { $('legend').innerHTML = items.map(([cls, t]) => '<span><i class="' + cls + '" style="background:var(--' + ({pods:'blue',warm:'amber',prim:'violet',cp:'cyan',nodes:'green',free:'line'}[cls]) + ')"></i>' + esc(t) + '</span>').join(''); }
+function rangesTable(head, rows) { $('ranges').innerHTML = '<thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + rows.map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody>'; }
+
+function renderEks(r) {
+  const i = r.instance, mp = r.maxPods, per = r.perNode;
+  $('instHint').textContent = i.type + ': ' + i.enis + ' ENIs × ' + i.ipsPerEni + ' IPv4 per ENI, ' + i.vcpus + ' vCPU, ' + (i.memMib / 1024) + ' GiB';
+  $('resTitle').textContent = 'EKS: ' + fmt(r.totals.nodes) + ' × ' + i.type + ' in ' + r.azs + ' zones';
+  $('resNote').textContent = r.nodesPlanned !== r.nodesPerAz ? 'sized for ' + r.nodesPlanned + ' nodes per zone (' + S.growth + '% headroom)' : '';
+  $('kpis').innerHTML = kpi(fmt(mp.maxPods), 'max pods per node', mp.rule === 'cap' ? 'capped (formula ' + fmt(mp.prefixDelegation ? mp.prefixFormula : mp.eniFormula) + ')' : 'ENI formula') +
+    kpi(fmt(per.ips), 'VPC addresses per node', per.mode === 'prefix' ? per.prefixes + ' prefixes × 16 + ' + per.enisUsed + ' ENI' : per.enisUsed + ' ENIs × ' + i.ipsPerEni) +
+    kpi('/' + r.perZone.prefix, 'subnet per zone', fmt(r.perZone.usable) + ' usable for ' + fmt(r.perZone.need) + ' needed') +
+    kpi(fmt(r.totals.pods), 'pods, whole cluster', r.podsPerNode + ' per node') +
+    kpi(fmt(r.totals.addresses), 'VPC addresses used', r.azs + ' × /' + r.perZone.prefix);
+  const total = r.perZone.usable;
+  const nodesIps = r.nodesPlanned * per.ips;
+  const podIps = r.nodesPlanned * r.podsPerNode;
+  const overhead = nodesIps - podIps;
+  const cp = S.eks.cp;
+  const free = Math.max(0, total - nodesIps - cp);
+  $('bar').innerHTML = barSeg('pods', podIps, total, 'pod addresses') + barSeg('warm', overhead, total, per.mode === 'prefix' ? 'warm prefix and ENI primaries' : 'warm ENI and ENI primaries') + barSeg('cp', cp, total, 'control-plane ENIs') + barSeg('free', free, total, 'free');
+  legend([['pods', 'pods ' + fmt(podIps)], ['warm', (per.mode === 'prefix' ? 'warm prefix + primaries ' : 'warm pool + primaries ') + fmt(overhead)], ['cp', 'control plane ' + cp], ['free', 'free ' + fmt(free) + ' of ' + fmt(total)]]);
+  $('barNote').textContent = 'one /' + r.perZone.prefix + ' subnet, one zone';
+  $('formula').textContent = (per.mode === 'prefix'
+    ? 'max pods   = min(cap ' + mp.cap + ', ' + i.enis + ' ENIs × (' + i.ipsPerEni + ' − 1) slots × 16 + 2 = ' + fmt(mp.prefixFormula) + ') = ' + mp.maxPods + '\nper node   = ⌈' + r.podsPerNode + ' pods ÷ 16⌉ + 1 warm = ' + per.prefixes + ' prefixes × 16 + ' + per.enisUsed + ' ENI primary = ' + per.ips
+    : 'max pods   = ' + i.enis + ' ENIs × (' + i.ipsPerEni + ' − 1) + 2 = ' + mp.eniFormula + (mp.rule === 'cap' ? ' → capped at ' + mp.cap : '') + '\nper node   = ' + per.enisUsed + ' ENIs attached (' + (per.enisUsed - 1) + ' for pods + 1 warm) × ' + i.ipsPerEni + ' = ' + per.ips) +
+    '\nper zone   = ' + r.nodesPlanned + ' nodes × ' + per.ips + ' + ' + cp + ' control plane = ' + fmt(r.perZone.need) + ' → /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable after the 5 AWS reserves)';
+  const rows = [];
+  for (let z = 0; z < r.azs; z++) rows.push(['zone ' + String.fromCharCode(97 + z), '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), fmt(per.ips), fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]);
+  rows.push(['worst case', '/' + r.perZone.prefixWorst, fmt(r.nodesPlanned), fmt(per.worst), fmt(r.perZone.needWorst), '', 'every ENI slot allocated']);
+  rangesTable(['Subnet', 'Prefix', 'Nodes', 'Per node', 'Needed', 'Usable', 'Headroom'], rows);
+}
+function renderGke(r) {
+  $('resTitle').textContent = 'GKE ' + (r.autopilot ? 'Autopilot' : 'Standard') + ': ' + fmt(r.nodes) + ' nodes × ' + r.podsPerNode + ' Pods';
+  $('resNote').textContent = 'sized for ' + r.nodesPlanned + ' nodes (' + r.surge + ' surge' + (S.growth ? ', ' + S.growth + '% headroom' : '') + ')';
+  $('kpis').innerHTML = kpi(r.podsPerNode, 'max Pods per node', r.autopilot ? 'fixed on Autopilot' : '8 to 256') +
+    kpi('/' + r.perNode.prefix, 'Pod range per node', fmt(r.perNode.addresses) + ' addresses, ≥ 2 × pods') +
+    kpi('/' + r.podRange.prefix, 'Pod secondary range', fmt(r.podRange.addresses) + ' addresses, ' + fmt(r.podRange.maxNodes) + ' nodes max') +
+    kpi('/' + r.primary.prefix, 'primary range (nodes)', fmt(r.primary.usable) + ' usable after 4 reserved') +
+    kpi(r.services.managed ? 'managed' : '/' + r.services.prefix, 'Services', r.services.managed ? '34.118.224.0/20, not in your subnet' : fmt(r.services.count) + ' Services');
+  const total = r.podRange.addresses, used = r.nodesPlanned * r.perNode.addresses, pods = r.nodesPlanned * r.podsPerNode;
+  $('bar').innerHTML = barSeg('pods', pods, total, 'Pods') + barSeg('warm', used - pods, total, 'unused half of each node range') + barSeg('free', total - used, total, 'free node slots');
+  legend([['pods', 'Pods ' + fmt(pods)], ['warm', 'unused in node ranges ' + fmt(used - pods)], ['free', 'free ' + fmt(total - used) + ' of ' + fmt(total)]]);
+  $('barNote').textContent = 'Pod secondary range /' + r.podRange.prefix;
+  $('formula').textContent = 'M  = 31 − ⌈log₂(' + r.podsPerNode + ')⌉ = ' + r.perNode.prefix + '  → /' + r.perNode.prefix + ' per node (' + fmt(r.perNode.addresses) + ' addresses)\nPod range = ' + (32 - r.perNode.prefix) + ' host bits + ⌈log₂(' + r.nodesPlanned + ' nodes)⌉ = ' + (32 - r.perNode.prefix + E.log2ceil(r.nodesPlanned)) + ' host bits → /' + Math.max(9, 32 - (32 - r.perNode.prefix + E.log2ceil(r.nodesPlanned))) + (r.podRange.prefix === 24 && 32 - (32 - r.perNode.prefix + E.log2ceil(r.nodesPlanned)) > 24 ? ' → node pool floor /24' : '') + '\nPrimary   = 2^(32 − S) − 4 ≥ ' + r.nodesPlanned + ' nodes → /' + r.primary.prefix + ' (' + fmt(r.primary.usable) + ' usable)';
+  rangesTable(['Range', 'Prefix', 'Holds', 'Note'], [
+    ['subnet primary range', '<b>/' + r.primary.prefix + '</b>', fmt(r.primary.usable) + ' nodes', 'first two and last two addresses reserved'],
+    ['Pod secondary range', '<b>/' + r.podRange.prefix + '</b>', fmt(r.podRange.maxNodes) + ' nodes × /' + r.perNode.prefix, 'immutable after cluster creation; node pool minimum /24'],
+    ['Services', r.services.managed ? 'GKE-managed' : '<b>/' + r.services.prefix + '</b>', r.services.managed ? '4,096 Services' : fmt(r.services.count) + ' Services', r.services.managed ? '34.118.224.0/20, no subnet range needed' : 'secondary range in the same subnet'],
+  ]);
+}
+function renderAks(r) {
+  $('resTitle').textContent = 'AKS ' + r.modeLabel + ': ' + fmt(r.nodes) + ' nodes × ' + r.maxPods + ' pods';
+  $('resNote').textContent = 'sized for ' + r.nodesPlanned + ' nodes (' + r.surge + ' surge' + (S.growth ? ', ' + S.growth + '% headroom' : '') + ')';
+  const ps = r.podSpace;
+  $('kpis').innerHTML = kpi(r.maxPods, 'max pods per node', 'default ' + E.AKS_MODES[r.mode].defaultMaxPods + ', max 250') +
+    kpi('/' + r.nodeSubnet.prefix, 'node subnet', fmt(r.nodeSubnet.usable) + ' usable for ' + fmt(r.nodeSubnet.need) + ' needed') +
+    (ps ? kpi('/' + ps.prefix, ps.kind.startsWith('pod subnet') ? 'pod subnet (VNet)' : r.mode === 'kubenet' ? 'pod CIDR (kubenet)' : 'pod CIDR (overlay)', ps.need ? fmt(ps.need) + ' addresses' : fmt(ps.maxNodes) + ' nodes × /24') : kpi(fmt(r.nodeSubnet.need), 'VNet addresses', 'nodes + pods, assigned up front')) +
+    kpi(fmt(r.totals.pods), 'pods, whole cluster', r.nodesPlanned + ' × ' + r.maxPods) +
+    kpi('10.0.0.0/16', 'service CIDR default', 'must not overlap the VNet');
+  let rows, total, segs, leg;
+  if (r.mode === 'nodesubnet') {
+    total = r.nodeSubnet.usable; const nodes = r.nodesPlanned, pods = r.nodesPlanned * r.maxPods;
+    segs = barSeg('nodes', nodes, total, 'node addresses') + barSeg('pods', pods, total, 'pod addresses, pre-assigned') + barSeg('free', total - nodes - pods, total, 'free');
+    leg = [['nodes', 'nodes ' + fmt(nodes)], ['pods', 'pods ' + fmt(pods)], ['free', 'free ' + fmt(total - nodes - pods) + ' of ' + fmt(total)]];
+    $('barNote').textContent = 'node subnet /' + r.nodeSubnet.prefix;
+    rows = [['node subnet (nodes + pods)', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), '(' + r.nodesPlanned + ') + (' + r.nodesPlanned + ' × ' + r.maxPods + ')']];
+  } else if (r.mode === 'podsubnet') {
+    total = ps.usable; const used = ps.need, pods = r.nodesPlanned * r.maxPods;
+    segs = barSeg('pods', pods, total, 'pods') + barSeg('warm', used - pods, total, 'batch rounding and spare batch') + barSeg('free', total - used, total, 'free');
+    leg = [['pods', 'pods ' + fmt(pods)], ['warm', 'batch headroom ' + fmt(used - pods)], ['free', 'free ' + fmt(total - used) + ' of ' + fmt(total)]];
+    $('barNote').textContent = 'pod subnet /' + ps.prefix;
+    rows = [['node subnet', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), 'one address per node'], ['pod subnet', '<b>/' + ps.prefix + '</b>', fmt(ps.need), fmt(ps.usable), r.nodesPlanned + ' nodes × ' + ps.perNode + ' (batches of 16 + one spare batch)']];
+  } else {
+    total = ps.maxNodes * 256; const used = r.nodesPlanned * 256, pods = r.nodesPlanned * r.maxPods;
+    segs = barSeg('pods', pods, total, 'pods') + barSeg('warm', used - pods, total, 'unused in node /24s') + barSeg('free', total - used, total, 'free node slots');
+    leg = [['pods', 'pods ' + fmt(pods)], ['warm', 'unused in node /24s ' + fmt(used - pods)], ['free', 'free ' + fmt(total - used) + ' of ' + fmt(total)]];
+    $('barNote').textContent = 'pod CIDR /' + ps.prefix + ' (private, outside the VNet)';
+    rows = [['node subnet (VNet)', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), 'one address per node'], ['pod CIDR (not VNet space)', '<b>/' + ps.prefix + '</b>', fmt(used), fmt(total), 'a /24 per node; default 10.244.0.0/16 holds 256 nodes']];
+  }
+  $('bar').innerHTML = segs; legend(leg);
+  $('formula').textContent = (r.mode === 'nodesubnet' ? 'VNet addresses = (' + r.nodes + ' nodes + ' + (r.nodesPlanned - r.nodes) + ' surge/growth) + (' + r.nodesPlanned + ' × ' + r.maxPods + ' maxPods) = ' + fmt(r.nodeSubnet.need)
+    : r.mode === 'podsubnet' ? 'node subnet = ' + r.nodesPlanned + ' nodes\npod subnet  = ' + r.nodesPlanned + ' × (⌈' + r.maxPods + ' ÷ 16⌉ × 16 + 16 spare batch) = ' + fmt(ps.need)
+    : 'node subnet = ' + r.nodesPlanned + ' nodes (one VNet address each)\npod CIDR    = ' + r.nodesPlanned + ' × /24 → /' + ps.prefix + ' (' + fmt(ps.maxNodes) + ' node slots)') +
+    '\nsmallest subnet with usable ≥ need, after the 5 Azure reserves → /' + r.nodeSubnet.prefix;
+  rangesTable(['Range', 'Prefix', 'Needed', 'Usable', 'How'], rows);
+}
+function renderChecks(r) {
+  const items = r.items.slice();
+  if (!items.some(i => i.k === 'bad')) items.unshift({ k: 'ok', t: 'nothing blocks this plan', d: 'The sizes above satisfy the rules the cloud documents. Review the informational items before you create the ranges.' });
+  $('checks').innerHTML = items.map(i => '<div class="check ' + i.k + '"><div class="ic">' + ({ ok: '✓', info: 'i', warn: '!', bad: '✕' }[i.k]) + '</div><div><b>' + esc(i.t) + '</b><small>' + esc(i.d) + (i.src && E.RULES[i.src] ? ' <a href="' + E.RULES[i.src].url + '" rel="noopener">source</a>' : '') + '</small></div></div>').join('') +
+    '<div class="src" style="margin-top:10px">Rules applied: ' + r.rules.map(k => '<a href="' + E.RULES[k].url + '" rel="noopener" title="' + esc(E.RULES[k].text) + '">' + k + '</a>').join(', ') + '</div>';
+}
+function renderSvc() {
+  if (S.cloud !== 'eks') return;
+  const c = E.eksServiceCidrCheck(S.eks.svc, S.eks.vpcs.split(/\n|,/).map(s => s.trim()).filter(Boolean));
+  $('svcCidr').classList.toggle('bad', !c.ok);
+  $('svcOut').innerHTML = (c.ok ? '<div class="check ok"><div class="ic">✓</div><div><b>' + esc(c.cidr) + ' is a valid service CIDR</b><small>inside a private range, /12 to /24, no overlap with the VPC CIDRs listed</small></div></div>' : '') + c.items.map(i => '<div class="check ' + i.k + '"><div class="ic">' + ({ warn: '!', bad: '✕' }[i.k] || 'i') + '</div><div><b>' + esc(i.t) + '</b><small>' + esc(i.d) + '</small></div></div>').join('');
+}
+
+// ------------------------------------------------------------ planner hand-off
+function plannerHash() {
+  const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, '');
+  if (S.cloud === 'eks') {
+    const p = Math.min(28, Math.max(16, R.perZone.prefix - E.log2ceil(R.azs) - 1));
+    return enc({ c: 'aws', a: '10.0.0.0', p, z: R.azs, f: 0, k: 1, g: 0, e: '', t: [['eks-nodes', 'private', 'prefix', R.perZone.prefix], ['public', 'public', 'prefix', Math.min(28, R.perZone.prefix + 2)]], r: 1, s: 6, v: 'x' });
+  }
+  if (S.cloud === 'gke') {
+    const small = Math.min(R.primary.prefix, R.podRange.prefix);
+    const p = Math.max(9, small - 1);
+    const t = [['gke-nodes-primary', 'private', 'prefix', R.primary.prefix], ['gke-pods-secondary', 'private', 'prefix', R.podRange.prefix]];
+    if (!R.services.managed) t.push(['gke-services', 'isolated', 'prefix', R.services.prefix]);
+    return enc({ c: 'gcp', a: '10.10.0.0', p, z: 1, f: 0, k: 1, g: 0, e: '', t, r: 1, s: 6, v: 'x' });
+  }
+  const t = [['aks-nodes', 'private', 'prefix', R.nodeSubnet.prefix]];
+  if (R.mode === 'podsubnet') t.push(['aks-pods', 'private', 'prefix', R.podSpace.prefix]);
+  const small = Math.min.apply(null, t.map(x => x[3]));
+  return enc({ c: 'azure', a: '10.0.0.0', p: Math.max(8, small - 1), z: 1, f: 0, k: 1, g: 0, e: '', t, r: 1, s: 6, v: 'x' });
+}
+
+// ------------------------------------------------------------ exports
+function code() {
+  const t = S.tab;
+  if (t === 'md') return md();
+  if (S.cloud === 'eks') return t === 'tf' ? tfEks() : cliEks();
+  if (S.cloud === 'gke') return t === 'tf' ? tfGke() : cliGke();
+  return t === 'tf' ? tfAks() : cliAks();
+}
+const hdr = (c) => c + ' Sizing from the Kubernetes IP Calculator - https://jhooq.com/tools/kubernetes-ip-calculator/' + (location.hash ? '\n' + c + ' Reproduce: ' + location.href : '') + '\n';
+function tfEks() {
+  const r = R, i = r.instance;
+  return hdr('#') + '# ' + fmt(r.nodesPlanned) + ' x ' + i.type + ' per zone, ' + r.podsPerNode + ' pods per node, ' + (r.perNode.mode === 'prefix' ? 'prefix delegation' : 'secondary IP mode') + '\n# subnet per zone: /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable, ' + fmt(r.perZone.need) + ' needed)\n\n' +
+'locals {\n  vpc_cidr        = "10.0.0.0/16"\n  azs             = ' + JSON.stringify(Array.from({ length: r.azs }, (_, k) => 'a' + k).map((_, k) => '${data.aws_region.current.region}' + String.fromCharCode(97 + k))).replace(/"\$\{/g, '"${') + '\n  node_subnet_bits = ' + (r.perZone.prefix - 16) + '  # /16 VPC -> /' + r.perZone.prefix + ' subnets\n  node_subnets    = [for k, az in local.azs : cidrsubnet(local.vpc_cidr, local.node_subnet_bits, k)]\n}\n\ndata "aws_region" "current" {}\n\nresource "aws_subnet" "nodes" {\n  for_each          = { for k, az in local.azs : az => local.node_subnets[k] }\n  vpc_id            = aws_vpc.this.id\n  availability_zone = each.key\n  cidr_block        = each.value\n  tags = {\n    Name                              = "eks-nodes-${each.key}"\n    "kubernetes.io/role/internal-elb" = "1"\n  }\n}\n\nresource "aws_eks_cluster" "this" {\n  name     = "demo"\n  role_arn = aws_iam_role.cluster.arn\n  vpc_config {\n    subnet_ids = [for s in aws_subnet.nodes : s.id]\n  }\n  kubernetes_network_config {\n    service_ipv4_cidr = "' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '"  # /12 to /24, private, not overlapping the VPC\n  }\n}\n\nresource "aws_eks_node_group" "default" {\n  cluster_name    = aws_eks_cluster.this.name\n  node_group_name = "default"\n  node_role_arn   = aws_iam_role.node.arn\n  subnet_ids      = [for s in aws_subnet.nodes : s.id]\n  instance_types  = ["' + i.type + '"]\n  scaling_config {\n    desired_size = ' + (r.nodesPerAz * r.azs) + '\n    min_size     = ' + (r.nodesPerAz * r.azs) + '\n    max_size     = ' + (r.nodesPlanned * r.azs) + '\n  }\n}\n' +
+(r.perNode.mode === 'prefix' ? '\nresource "aws_eks_addon" "vpc_cni" {\n  cluster_name = aws_eks_cluster.this.name\n  addon_name   = "vpc-cni"\n  configuration_values = jsonencode({\n    env = {\n      ENABLE_PREFIX_DELEGATION = "true"\n      WARM_PREFIX_TARGET       = "1"\n    }\n  })\n}\n' : '\n# Each node holds ' + r.perNode.ips + ' VPC addresses for ' + r.podsPerNode + ' pods (every attached ENI is fully allocated). To hold fewer, set WARM_IP_TARGET and MINIMUM_IP_TARGET on the vpc-cni add-on.\n');
+}
+function cliEks() {
+  const r = R, i = r.instance;
+  return hdr('#') + '# eksctl ClusterConfig\napiVersion: eksctl.io/v1alpha5\nkind: ClusterConfig\nmetadata:\n  name: demo\n  region: us-east-1\nkubernetesNetworkConfig:\n  serviceIPv4CIDR: ' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '\nvpc:\n  cidr: 10.0.0.0/16   # ' + r.azs + ' node subnets of /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable each)\n' + (r.perNode.mode === 'prefix' ? 'addons:\n  - name: vpc-cni\n    configurationValues: |\n      env:\n        ENABLE_PREFIX_DELEGATION: "true"\n        WARM_PREFIX_TARGET: "1"\n' : '') + 'managedNodeGroups:\n  - name: default\n    instanceType: ' + i.type + '\n    desiredCapacity: ' + (r.nodesPerAz * r.azs) + '\n    maxSize: ' + (r.nodesPlanned * r.azs) + '\n    maxPodsPerNode: ' + r.podsPerNode + '   # formula ' + (r.perNode.mode === 'prefix' ? fmt(r.maxPods.prefixFormula) + ', cap ' + r.maxPods.cap : r.maxPods.eniFormula + (r.maxPods.rule === 'cap' ? ', cap ' + r.maxPods.cap : '')) + '\n\n# Check what a running node advertises:\n# kubectl get node -o jsonpath=\'{range .items[*]}{.metadata.name}{"\\t"}{.status.allocatable.pods}{"\\n"}{end}\'\n# Count free addresses in a subnet:\n# aws ec2 describe-subnets --subnet-ids subnet-0123 --query \'Subnets[0].AvailableIpAddressCount\'\n';
+}
+function tfGke() {
+  const r = R;
+  return hdr('#') + '# ' + fmt(r.nodesPlanned) + ' nodes x ' + r.podsPerNode + ' Pods; node range /' + r.perNode.prefix + ', Pod range /' + r.podRange.prefix + ', primary /' + r.primary.prefix + '\n\nresource "google_compute_subnetwork" "gke" {\n  name          = "gke-nodes"\n  region        = "us-central1"\n  network       = google_compute_network.vpc.id\n  ip_cidr_range = "10.10.0.0/' + r.primary.prefix + '"   # ' + fmt(r.primary.usable) + ' usable node addresses\n  secondary_ip_range {\n    range_name    = "pods"\n    ip_cidr_range = "10.' + (r.podRange.prefix <= 16 ? '64.0.0' : '10.128.0') + '/' + r.podRange.prefix + '"   # ' + fmt(r.podRange.maxNodes) + ' nodes x /' + r.perNode.prefix + '\n  }\n' + (r.services.managed ? '' : '  secondary_ip_range {\n    range_name    = "services"\n    ip_cidr_range = "10.11.0.0/' + r.services.prefix + '"\n  }\n') + '  private_ip_google_access = true\n}\n\nresource "google_container_cluster" "this" {\n  name       = "demo"\n  location   = "us-central1"\n  network    = google_compute_network.vpc.id\n  subnetwork = google_compute_subnetwork.gke.id\n' + (r.autopilot ? '  enable_autopilot = true\n' : '  default_max_pods_per_node = ' + r.podsPerNode + '\n  remove_default_node_pool  = true\n  initial_node_count        = 1\n') + '  ip_allocation_policy {\n    cluster_secondary_range_name  = "pods"\n' + (r.services.managed ? '    # services_secondary_range_name omitted: new clusters use the GKE-managed 34.118.224.0/20\n' : '    services_secondary_range_name = "services"\n') + '  }\n}\n';
+}
+function cliGke() {
+  const r = R;
+  return hdr('#') + 'gcloud compute networks subnets create gke-nodes \\\n  --network=vpc --region=us-central1 \\\n  --range=10.10.0.0/' + r.primary.prefix + ' \\\n  --secondary-range=pods=10.' + (r.podRange.prefix <= 16 ? '64.0.0' : '10.128.0') + '/' + r.podRange.prefix + (r.services.managed ? '' : ',services=10.11.0.0/' + r.services.prefix) + ' \\\n  --enable-private-ip-google-access\n\ngcloud container clusters create' + (r.autopilot ? '-auto' : '') + ' demo \\\n  --region=us-central1 --network=vpc --subnetwork=gke-nodes \\\n  --cluster-secondary-range-name=pods' + (r.services.managed ? '' : ' --services-secondary-range-name=services') + (r.autopilot ? '' : ' \\\n  --enable-ip-alias --default-max-pods-per-node=' + r.podsPerNode + ' --num-nodes=' + Math.ceil(r.nodes / 3)) + '\n\n# Each node reserves a /' + r.perNode.prefix + ' (' + fmt(r.perNode.addresses) + ' addresses) from the pods range; ' + fmt(r.podRange.maxNodes) + ' nodes fit a /' + r.podRange.prefix + '.\n';
+}
+function tfAks() {
+  const r = R, ps = r.podSpace;
+  return hdr('#') + '# ' + r.modeLabel + ': ' + fmt(r.nodesPlanned) + ' nodes x ' + r.maxPods + ' pods; node subnet /' + r.nodeSubnet.prefix + (ps ? (ps.kind.startsWith('pod subnet') ? ', pod subnet /' + ps.prefix : ', pod CIDR /' + ps.prefix) : '') + '\n\nresource "azurerm_subnet" "nodes" {\n  name                 = "aks-nodes"\n  resource_group_name  = azurerm_resource_group.rg.name\n  virtual_network_name = azurerm_virtual_network.vnet.name\n  address_prefixes     = ["10.240.0.0/' + r.nodeSubnet.prefix + '"]   # ' + fmt(r.nodeSubnet.usable) + ' usable for ' + fmt(r.nodeSubnet.need) + '\n}\n' + (r.mode === 'podsubnet' ? '\nresource "azurerm_subnet" "pods" {\n  name                 = "aks-pods"\n  resource_group_name  = azurerm_resource_group.rg.name\n  virtual_network_name = azurerm_virtual_network.vnet.name\n  address_prefixes     = ["10.241.0.0/' + ps.prefix + '"]   # ' + fmt(ps.usable) + ' usable for ' + fmt(ps.need) + '\n  delegation {\n    name = "aks"\n    service_delegation {\n      name    = "Microsoft.ContainerService/managedClusters"\n      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]\n    }\n  }\n}\n' : '') + '\nresource "azurerm_kubernetes_cluster" "this" {\n  name                = "demo"\n  location            = azurerm_resource_group.rg.location\n  resource_group_name = azurerm_resource_group.rg.name\n  dns_prefix          = "demo"\n\n  default_node_pool {\n    name           = "system"\n    vm_size        = "Standard_D4s_v5"\n    node_count     = ' + r.nodes + '\n    max_pods       = ' + r.maxPods + '\n    vnet_subnet_id = azurerm_subnet.nodes.id\n' + (r.mode === 'podsubnet' ? '    pod_subnet_id  = azurerm_subnet.pods.id\n' : '') + '    upgrade_settings {\n      max_surge = "' + r.surge + '"\n    }\n  }\n\n  network_profile {\n    network_plugin = "' + (r.mode === 'kubenet' ? 'kubenet' : 'azure') + '"\n' + (r.mode === 'overlay' ? '    network_plugin_mode = "overlay"\n    pod_cidr            = "10.244.0.0/' + ps.prefix + '"\n' : r.mode === 'kubenet' ? '    pod_cidr       = "10.244.0.0/' + ps.prefix + '"\n' : '') + '    service_cidr   = "10.0.0.0/16"   # must not overlap the VNet\n    dns_service_ip = "10.0.0.10"\n  }\n\n  identity { type = "SystemAssigned" }\n  node_provisioning_profile { mode = "Manual" }   # required by azurerm 5.x\n}\n';
+}
+function cliAks() {
+  const r = R, ps = r.podSpace;
+  return hdr('#') + 'az network vnet subnet create -g rg --vnet-name vnet -n aks-nodes --address-prefixes 10.240.0.0/' + r.nodeSubnet.prefix + '\n' + (r.mode === 'podsubnet' ? 'az network vnet subnet create -g rg --vnet-name vnet -n aks-pods  --address-prefixes 10.241.0.0/' + ps.prefix + '\n' : '') + '\naz aks create -g rg -n demo \\\n  --node-count ' + r.nodes + ' --max-pods ' + r.maxPods + ' --max-surge ' + r.surge + ' \\\n  --vnet-subnet-id /subscriptions/<sub>/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet/subnets/aks-nodes \\\n' + (r.mode === 'overlay' ? '  --network-plugin azure --network-plugin-mode overlay --pod-cidr 10.244.0.0/' + ps.prefix + ' \\\n' : r.mode === 'podsubnet' ? '  --network-plugin azure --pod-subnet-id /subscriptions/<sub>/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet/subnets/aks-pods \\\n' : r.mode === 'kubenet' ? '  --network-plugin kubenet --pod-cidr 10.244.0.0/' + ps.prefix + ' \\\n' : '  --network-plugin azure \\\n') + '  --service-cidr 10.0.0.0/16 --dns-service-ip 10.0.0.10\n\n# Count what the subnet has left:\n# az network vnet subnet show -g rg --vnet-name vnet -n aks-nodes --query "ipConfigurations | length(@)"\n';
+}
+function md() {
+  const r = R;
+  if (S.cloud === 'eks') return '| Item | Value |\n|---|---|\n| Instance type | ' + r.instance.type + ' (' + r.instance.enis + ' ENIs × ' + r.instance.ipsPerEni + ' IPs) |\n| Mode | ' + (r.perNode.mode === 'prefix' ? 'prefix delegation' : 'secondary IPs') + ' |\n| Max pods per node | ' + r.maxPods.maxPods + ' |\n| VPC addresses per node | ' + r.perNode.ips + ' |\n| Nodes per zone (planned) | ' + r.nodesPlanned + ' |\n| Zones | ' + r.azs + ' |\n| Subnet per zone | /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable, ' + fmt(r.perZone.need) + ' needed) |\n| Pods, whole cluster | ' + fmt(r.totals.pods) + ' |\n\nSource: https://jhooq.com/tools/kubernetes-ip-calculator/' + location.hash + '\n';
+  if (S.cloud === 'gke') return '| Item | Value |\n|---|---|\n| Mode | ' + (r.autopilot ? 'Autopilot' : 'Standard') + ' |\n| Max Pods per node | ' + r.podsPerNode + ' |\n| Pod range per node | /' + r.perNode.prefix + ' |\n| Nodes (planned) | ' + r.nodesPlanned + ' |\n| Pod secondary range | /' + r.podRange.prefix + ' (' + fmt(r.podRange.maxNodes) + ' nodes) |\n| Primary range | /' + r.primary.prefix + ' (' + fmt(r.primary.usable) + ' usable) |\n| Services | ' + (r.services.managed ? 'GKE-managed 34.118.224.0/20' : '/' + r.services.prefix) + ' |\n\nSource: https://jhooq.com/tools/kubernetes-ip-calculator/' + location.hash + '\n';
+  return '| Item | Value |\n|---|---|\n| Plugin | ' + r.modeLabel + ' |\n| Max pods per node | ' + r.maxPods + ' |\n| Nodes (planned) | ' + r.nodesPlanned + ' |\n| Node subnet | /' + r.nodeSubnet.prefix + ' (' + fmt(r.nodeSubnet.usable) + ' usable, ' + fmt(r.nodeSubnet.need) + ' needed) |\n' + (r.podSpace ? '| ' + r.podSpace.kind + ' | /' + r.podSpace.prefix + ' |\n' : '') + '| Pods, whole cluster | ' + fmt(r.totals.pods) + ' |\n\nSource: https://jhooq.com/tools/kubernetes-ip-calculator/' + location.hash + '\n';
+}
+function renderCode() { [...$('tabs').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.tab)); $('code').textContent = code(); }
+
+// ------------------------------------------------------------ wiring
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800); }
+function setTheme(t) { document.documentElement.dataset.theme = t; $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙'; try { localStorage.setItem('jq-theme', t); } catch (e) {} }
+function init() {
+  $('instList').innerHTML = E.eksInstanceTypes().map(t => '<option value="' + t + '">').join('');
+  $('instQuick').innerHTML = QUICK.map(t => '<button class="chip" data-v="' + t + '">' + t + '</button>').join('');
+  $('instQuick').querySelectorAll('button').forEach(b => b.onclick = () => { S.eks.type = b.dataset.v; pushInputs(); update(); });
+  [...$('cloudSeg').children].forEach(b => b.onclick = () => { S.cloud = b.dataset.v; pushInputs(); update(); });
+  [...$('azSeg').children].forEach(b => b.onclick = () => { S.eks.azs = +b.dataset.v; pushInputs(); update(); });
+  [...$('gkeMode').children].forEach(b => b.onclick = () => { S.gke.autopilot = b.dataset.v === 'autopilot'; pushInputs(); update(); });
+  [...$('tabs').children].forEach(b => b.onclick = () => { S.tab = b.dataset.v; renderCode(); });
+  ['inst', 'nodesAz', 'podsEks', 'cpIps', 'prefixSw', 'managedSw', 'svcCidr', 'vpcCidrs', 'nodesGke', 'podsGke', 'svcManaged', 'svcPrefix', 'aksMode', 'nodesAks', 'podsAks', 'surge', 'growth'].forEach(id => { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
+  $('copyCode').onclick = () => navigator.clipboard.writeText($('code').textContent).then(() => toast('Copied'));
+  $('shareBtn').onclick = () => { saveHash(); navigator.clipboard.writeText(location.href).then(() => toast('Link copied - it reproduces this calculation')); };
+  $('printBtn').onclick = () => window.print();
+  window.__plannerHash = plannerHash; window.__code = code;
+  $('plannerBtn').onclick = () => { if (R && !R.error) window.open('https://jhooq.com/tools/vpc-subnet-planner/#' + plannerHash(), '_blank', 'noopener'); };
+  let th = 'light'; try { th = localStorage.getItem('jq-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+  setTheme(th); $('themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  loadHash(); pushInputs(); update();
+  window.addEventListener('hashchange', () => { if (loadHash()) { pushInputs(); update(); } });
+}
+init();
+})();
+</script>
+</body>
+</html>
