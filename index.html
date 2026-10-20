@@ -152,7 +152,7 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
     <h1>Kubernetes IP Calculator</h1>
     <p>How many IP addresses does your EKS, GKE or AKS cluster really need? Pick the cloud, the instance type or the pods per node, the node count and the zones. You get the maximum pods per node, the VPC addresses every node takes, the subnet size per zone and the pod and service ranges, computed from the rules each provider publishes and linked to them. Nothing leaves your browser.</p>
     <div class="badges">
-      <span class="badge">EKS ENI and prefix delegation maths</span><span class="badge">GKE node Pod ranges</span><span class="badge">AKS Overlay, Pod Subnet, legacy CNI</span><span class="badge">1404 EC2 instance types</span><span class="badge">Opens in the VPC Subnet Planner</span><span class="badge">Terraform and CLI snippets</span><span class="badge">No upload, no sign-up</span>
+      <span class="badge">EKS ENI, prefix delegation and custom networking maths</span><span class="badge">GKE node Pod ranges</span><span class="badge">AKS Overlay, Pod Subnet, legacy CNI</span><span class="badge">1404 EC2 instance types</span><span class="badge">Opens in the VPC Subnet Planner</span><span class="badge">Terraform and CLI snippets</span><span class="badge">No upload, no sign-up</span>
     </div>
   </section>
 
@@ -191,6 +191,7 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
             <div class="field"><label for="cpIps">Control-plane IPs per subnet</label><select id="cpIps"><option value="16" selected>16 (recommended)</option><option value="6">6 (minimum)</option></select></div>
           </div>
           <label class="switch" data-only="eks"><input type="checkbox" id="prefixSw"> Prefix delegation (/28 prefixes per ENI slot)</label>
+          <label class="switch" data-only="eks"><input type="checkbox" id="customSw"> Custom networking (Pods in a secondary-CIDR subnet)</label>
           <label class="switch" data-only="eks"><input type="checkbox" id="managedSw" checked> Managed node group (maxPods capped at 110 or 250)</label>
 
           <!-- GKE -->
@@ -280,6 +281,7 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
         <tbody>
           <tr><td>EKS, VPC CNI secondary IPs</td><td>ENIs × (IPs per ENI − 1) + 2; managed node groups cap at 110 (under 30 vCPU) or 250</td><td>Every attached ENI has all its addresses allocated. With the default WARM_ENI_TARGET of 1 a node holds one spare ENI, so m5.large (3 × 10) takes up to 30 VPC addresses for 29 pods.</td><td><a href="https://docs.aws.amazon.com/eks/latest/userguide/choosing-instance-type.html" rel="noopener">EKS instance types</a>, <a href="https://github.com/aws/amazon-vpc-cni-k8s/blob/master/README.md" rel="noopener">VPC CNI README</a></td></tr>
           <tr><td>EKS, prefix delegation</td><td>ENI slots × 16 + 2, capped at 110 or 250</td><td>Each ENI slot holds a /28 prefix (16 addresses) instead of one address; the node takes prefixes × 16 plus one primary address per ENI. Prefixes need contiguous, aligned free blocks.</td><td><a href="https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-linux.html" rel="noopener">EKS prefix mode</a></td></tr>
+          <tr><td>EKS, custom networking</td><td>(ENIs − 1) × (IPs per ENI − 1) + 2, or × 16 with prefixes; same cap. m5.large: 20</td><td>One address per node in the node subnet; every Pod ENI and its addresses in a per-zone subnet from a secondary CIDR, 100.64.0.0/10 recommended. One ENIConfig per zone, new nodes only. A VPC holds 5 IPv4 CIDR blocks by default.</td><td><a href="https://docs.aws.amazon.com/eks/latest/best-practices/custom-networking.html" rel="noopener">EKS custom networking</a>, <a href="https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html" rel="noopener">VPC quotas</a></td></tr>
           <tr><td>EKS, cluster subnets</td><td>-</td><td>At least 6 free addresses per subnet for the control plane (16 recommended), in at least two Availability Zones. Service CIDR /12 to /24 inside a private range, not overlapping the VPC.</td><td><a href="https://docs.aws.amazon.com/eks/latest/userguide/network-reqs.html" rel="noopener">EKS network requirements</a></td></tr>
           <tr><td>GKE, VPC-native</td><td>8 to 256 (default 110; Autopilot 32)</td><td>Each node gets an alias range of /(31 − ⌈log₂ pods⌉): /24 for 110 pods, /28 for 8. The Pod secondary range must hold one block per node and a node pool range is at least /24. Nodes take one primary address each; the primary range reserves 4.</td><td><a href="https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr" rel="noopener">GKE max Pods per node</a>, <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/alias-ips" rel="noopener">VPC-native clusters</a></td></tr>
           <tr><td>AKS, Azure CNI Overlay</td><td>default 250, max 250</td><td>Nodes take one VNet address each (plus surge). Pods come from a private pod CIDR, a /24 per node; the default 10.244.0.0/16 holds 256 nodes.</td><td><a href="https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning" rel="noopener">AKS IP planning</a></td></tr>
@@ -290,11 +292,12 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
       </table></div>
 
       <h3 style="margin-top:18px;font-size:1rem">What it does not do</h3>
-      <p>It does not model Windows nodes, IPv6 clusters, EKS custom networking with secondary CIDRs, security groups for pods (branch ENIs), GKE multi-Pod CIDR, or AKS static block allocation. Those change the arithmetic; the per-cloud sources above describe each one. The numbers are planning maximums: real clusters also lose addresses to load balancers, endpoints and node replacements.</p>
+      <p>It does not model Windows nodes, IPv6 clusters, security groups for pods (branch ENIs), GKE multi-Pod CIDR, or AKS static block allocation. Those change the arithmetic; the per-cloud sources above describe each one. The numbers are planning maximums: real clusters also lose addresses to load balancers, endpoints and node replacements.</p>
 
       <h3 style="margin-top:18px;font-size:1rem">Frequently asked questions</h3>
       <div id="faq">
         <p><b>How many pods can run on an m5.large in EKS?</b><br>29 with the default VPC CNI: 3 ENIs × (10 IPs − 1) + 2. With prefix delegation the formula gives 434, and the managed node group cap of 110 applies.</p>
+        <p><b>How many pods can an EKS node run with custom networking?</b><br>Fewer than without it: the primary ENI no longer serves pods, so max pods is (ENIs − 1) × (IPs per ENI − 1) + 2. An m5.large drops from 29 to 20 and an m5.2xlarge from 58 to 44; with prefix delegation on top the formula gives 290 for an m5.large and the managed node group cap of 110 applies.</p>
         <p><b>How many IP addresses does an EKS node consume?</b><br>Up to ENIs × IPs per ENI in secondary-IP mode, because the CNI allocates every address of an attached ENI and keeps a spare ENI warm by default. An m5.large can hold 30 VPC addresses; set WARM_IP_TARGET and MINIMUM_IP_TARGET to shrink the warm pool.</p>
         <p><b>Why is my EKS subnet out of IP addresses with only 10 nodes?</b><br>Because pods, not nodes, take the addresses. Ten m5.2xlarge nodes at 58 pods each can hold 600 addresses, and a /23 has 507 usable. Use a /19 per zone, or turn on prefix delegation.</p>
         <p><b>How big should the GKE Pod range be?</b><br>One block of /(31 − ⌈log₂ pods per node⌉) per node: 110 pods per node is a /24 per node, so 900 nodes need a /14 secondary range. Reduce max Pods per node to shrink it.</p>
@@ -306,6 +309,7 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
    {"@type":"Question","name":"How many pods can run on an m5.large in EKS?","acceptedAnswer":{"@type":"Answer","text":"29 with the default VPC CNI: 3 ENIs x (10 IPs - 1) + 2. With prefix delegation the formula gives 434, and the managed node group cap of 110 applies."}},
+   {"@type":"Question","name":"How many pods can an EKS node run with custom networking?","acceptedAnswer":{"@type":"Answer","text":"Fewer than without it: the primary ENI no longer serves pods, so max pods is (ENIs - 1) x (IPs per ENI - 1) + 2. An m5.large drops from 29 to 20 and an m5.2xlarge from 58 to 44; with prefix delegation the formula gives 290 for an m5.large and the managed node group cap of 110 applies."}},
    {"@type":"Question","name":"How many IP addresses does an EKS node consume?","acceptedAnswer":{"@type":"Answer","text":"Up to ENIs x IPs per ENI in secondary-IP mode, because the VPC CNI allocates every address of an attached ENI and keeps a spare ENI warm by default. An m5.large can hold 30 VPC addresses; WARM_IP_TARGET and MINIMUM_IP_TARGET shrink the warm pool."}},
    {"@type":"Question","name":"Why is my EKS subnet out of IP addresses with only 10 nodes?","acceptedAnswer":{"@type":"Answer","text":"Pods, not nodes, take the addresses. Ten m5.2xlarge nodes at 58 pods each can hold 600 addresses while a /23 has 507 usable. Use a /19 per zone or turn on prefix delegation."}},
    {"@type":"Question","name":"How big should the GKE Pod range be?","acceptedAnswer":{"@type":"Answer","text":"One block of /(31 - ceil(log2(pods per node))) per node: 110 pods per node is a /24 per node, so 900 nodes need a /14 secondary range."}},
@@ -350,6 +354,9 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
     eksWarmPrefix: { text: 'WARM_PREFIX_TARGET default 1 in the installation manifest', url: 'https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-linux.html' },
     eksControlPlane: { text: 'Cluster subnets need at least 6 free IPs each (16 recommended), in at least 2 Availability Zones', url: 'https://docs.aws.amazon.com/eks/latest/userguide/network-reqs.html' },
     eksServiceCidr: { text: 'Service CIDR: inside 10.0.0.0/8, 172.16.0.0/12 or 192.168.0.0/16; between /24 and /12; must not overlap the VPC', url: 'https://docs.aws.amazon.com/eks/latest/APIReference/API_KubernetesNetworkConfigRequest.html' },
+    eksCustom: { text: 'Custom networking: Pods use secondary ENIs in the ENIConfig subnet; the primary ENI serves no Pods, so max pods = (ENIs - 1) x (IPs per ENI - 1) + 2 (m5.large: 20)', url: 'https://docs.aws.amazon.com/eks/latest/best-practices/custom-networking.html' },
+    eksCustomSetup: { text: 'Custom networking setup: one ENIConfig per Availability Zone, AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG=true, ENI_CONFIG_LABEL_DEF=topology.kubernetes.io/zone, new nodes only; with your own AMI set maxPods yourself', url: 'https://docs.aws.amazon.com/eks/latest/userguide/cni-custom-network-tutorial.html' },
+    vpcCidrQuota: { text: 'IPv4 CIDR blocks per VPC: 5 by default (adjustable to 50), the primary block included; secondary blocks /16 to /28, 100.64.0.0/10 allowed', url: 'https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html' },
     eksReserved: { text: 'AWS reserves the first four and the last address of every subnet; subnets are /28 to /16', url: 'https://docs.aws.amazon.com/vpc/latest/userguide/subnet-sizing.html' },
     gkeNodeRange: { text: 'Node Pod range M = 31 - ceil(log2(maxPodsPerNode)); 8..256 pods per node, default 110, Autopilot fixed 32', url: 'https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr' },
     gkeNodePoolMin: { text: 'A node pool Pod secondary range must be at least /24', url: 'https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr' },
@@ -402,7 +409,9 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
     o = o || {};
     const i = typeof type === 'string' ? eksInstance(type) : type;
     if (!i) return null;
-    const slots = i.enis * (i.ipsPerEni - 1);
+    const custom = !!o.customNetworking;
+    const podEnis = custom ? Math.max(0, i.enis - 1) : i.enis; // custom networking: the primary ENI serves no Pods
+    const slots = podEnis * (i.ipsPerEni - 1);
     const eniFormula = slots + 2;
     const prefixFormula = slots * 16 + 2;
     const cap = eksCap(i.vcpus);
@@ -411,7 +420,7 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
     if (o.prefixDelegation) { maxPods = Math.min(prefixFormula, cap); rule = maxPods === cap ? 'cap' : 'prefix'; }
     else if (managed) { maxPods = Math.min(eniFormula, cap); rule = maxPods === cap && eniFormula > cap ? 'cap' : 'eni'; }
     else { maxPods = eniFormula; rule = 'eni'; }
-    return { instance: i, eniFormula, prefixFormula, cap, managed, prefixDelegation: !!o.prefixDelegation, maxPods, rule };
+    return { instance: i, eniFormula, prefixFormula, cap, managed, prefixDelegation: !!o.prefixDelegation, customNetworking: custom, podEnis, maxPods, rule };
   }
 
   // VPC addresses one node takes from its subnet when it runs `pods` pods
@@ -422,6 +431,25 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
     const mp = eksMaxPods(i, o);
     const pods = Math.min(o.pods == null ? mp.maxPods : o.pods, mp.maxPods);
     const slotsPerEni = i.ipsPerEni - 1;
+    if (o.customNetworking) {
+      // node subnet keeps only the primary ENI's own address; every Pod ENI and its addresses live in the ENIConfig (pod) subnet
+      const podEnis = mp.podEnis;
+      if (podEnis === 0) return { mode: 'custom', custom: true, pods: 0, enisUsed: 0, nodeIps: 1, podIps: 0, ips: 1, worst: 1, podWorst: 0, maxPods: mp.maxPods, note: 'one ENI only: custom networking leaves no ENI for Pods' };
+      if (o.prefixDelegation) {
+        const warm = o.warmPrefixTarget == null ? 1 : o.warmPrefixTarget;
+        const prefixes = Math.min(Math.max(1, Math.ceil(pods / 16)) + warm, podEnis * slotsPerEni);
+        const enisUsed = Math.max(1, Math.ceil(prefixes / slotsPerEni));
+        const podIps = prefixes * 16 + enisUsed;
+        const podWorst = podEnis * slotsPerEni * 16 + podEnis;
+        return { mode: 'custom-prefix', custom: true, pods, prefixes, enisUsed, nodeIps: 1, podIps, ips: 1 + podIps, worst: 1 + podWorst, podWorst, maxPods: mp.maxPods, note: 'pod subnet: prefixes x 16 + one address per Pod ENI; node subnet: 1' };
+      }
+      const warm = o.warmEniTarget == null ? 1 : o.warmEniTarget;
+      const enisForPods = Math.max(1, Math.ceil(Math.max(pods - 2, 0) / slotsPerEni));
+      const enisUsed = Math.min(podEnis, enisForPods + warm);
+      const podIps = enisUsed * i.ipsPerEni;
+      const podWorst = podEnis * i.ipsPerEni;
+      return { mode: 'custom', custom: true, pods, enisUsed, nodeIps: 1, podIps, ips: 1 + podIps, worst: 1 + podWorst, podWorst, maxPods: mp.maxPods, note: 'pod subnet: Pod ENIs x IPs per ENI; node subnet: 1; WARM_ENI_TARGET ' + warm };
+    }
     if (o.prefixDelegation) {
       const warm = o.warmPrefixTarget == null ? 1 : o.warmPrefixTarget;
       const prefixesNeeded = Math.max(1, Math.ceil(pods / 16));
@@ -465,6 +493,7 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
     const pods = o.podsPerNode == null || o.podsPerNode === '' ? mp.maxPods : Math.min(+o.podsPerNode, mp.maxPods);
     const per = eksPerNodeIps(i, Object.assign({}, o, { pods }));
     const nodesPlanned = Math.ceil(nodesPerAz * (1 + growth));
+    if (o.customNetworking) return eksPlanCustom(o, i, azs, nodesPerAz, nodesPlanned, cp, mp, pods, per);
     const need = nodesPlanned * per.ips + cp;
     const needWorst = nodesPlanned * per.worst + cp;
     const sub = prefixFor(need, 5, 28, 16);
@@ -482,6 +511,37 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
       perZone: { need, needWorst, prefix: sub.prefix, usable: perZoneUsable, prefixWorst: subWorst.prefix },
       totals: { nodes: nodesPlanned * azs, pods: nodesPlanned * azs * pods, addresses: pow2(32 - sub.prefix) * azs },
       items, rules: ['eksMaxPodsFormula', 'eksManagedCap', 'eksControlPlane', 'eksReserved'].concat(o.prefixDelegation ? ['eksPrefix', 'eksWarmPrefix'] : ['eksWarmEni']),
+    };
+  }
+
+  // Custom networking: nodes stay in the node subnet (one address each), Pods move to a per-zone subnet carved from a secondary CIDR
+  function eksPlanCustom(o, i, azs, nodesPerAz, nodesPlanned, cp, mp, pods, per) {
+    const items = [];
+    const nodeNeed = nodesPlanned * per.nodeIps + cp;
+    const podNeed = nodesPlanned * per.podIps;
+    const podNeedWorst = nodesPlanned * per.podWorst;
+    const nodeSub = prefixFor(nodeNeed, 5, 28, 16);
+    const podSub = prefixFor(Math.max(1, podNeed), 5, 28, 16);
+    const podSubWorst = prefixFor(Math.max(1, podNeedWorst), 5, 28, 16);
+    const secPrefix = podSub.prefix - log2ceil(azs);
+    const secondary = { prefix: secPrefix, cidr: '100.64.0.0/' + Math.max(16, secPrefix), fits: secPrefix >= 16 };
+    if (azs < 2) items.push({ k: 'bad', t: 'one Availability Zone', d: 'EKS needs subnets in at least two Availability Zones.', src: 'eksControlPlane' });
+    if (mp.podEnis === 0) items.push({ k: 'bad', t: i.type + ' has one ENI', d: 'Custom networking takes the primary ENI away from Pods, so this instance type can run only the two host-network Pods. Pick a type with at least two ENIs.', src: 'eksCustom' });
+    if (!podSub.fits) items.push({ k: 'bad', t: 'pod subnet larger than a /16', d: podNeed + ' Pod addresses per zone exceed the largest AWS subnet. Split the node group or add prefix delegation.', src: 'eksReserved' });
+    else if (!secondary.fits) items.push({ k: 'warn', t: 'pod subnets need more than one /16 secondary block', d: azs + ' pod subnets of /' + podSub.prefix + ' need a /' + secPrefix + ', and a secondary VPC CIDR can be at most a /16. Associate more than one secondary block; a VPC holds 5 IPv4 CIDR blocks by default, the primary included.', src: 'vpcCidrQuota' });
+    items.push({ k: 'info', t: 'max pods drops from ' + eksMaxPods(i, Object.assign({}, o, { customNetworking: false })).maxPods + ' to ' + mp.maxPods, d: 'With custom networking the primary ENI serves no Pods, so ' + i.type + ' loses one ENI of Pod capacity: (' + i.enis + ' - 1) x (' + i.ipsPerEni + ' - 1) + 2' + (o.prefixDelegation ? ' slots, x16 with prefixes' : '') + '.', src: 'eksCustom' });
+    items.push({ k: 'warn', t: 'check the max pods your nodes advertise', d: 'Compare kubectl get node -o jsonpath="{.items[*].status.allocatable.pods}" with ' + mp.maxPods + '. If a node advertises more, Pods past ' + mp.maxPods + ' wait in ContainerCreating; with your own AMI in a launch template set maxPods to ' + mp.maxPods + ' (the AWS tutorial sets 20 for m5.large).', src: 'eksCustomSetup' });
+    items.push({ k: 'info', t: 'one ENIConfig per zone, new nodes only', d: 'Name each ENIConfig after its zone, set AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG=true and ENI_CONFIG_LABEL_DEF=topology.kubernetes.io/zone on aws-node, then create a new node group and drain the old one. Existing nodes keep their ENIs.', src: 'eksCustomSetup' });
+    items.push({ k: 'info', t: 'take the secondary block from 100.64.0.0/10', d: 'AWS recommends the shared address space for Pod CIDRs because corporate networks rarely use it. Pods reach other networks through the node primary address (SNAT), so the range does not have to be routable.', src: 'eksCustom' });
+    if (o.prefixDelegation) items.push({ k: 'info', t: 'prefix delegation needs contiguous /28 blocks', d: 'Prefixes come from free, aligned 16-address blocks of the pod subnet; a fresh secondary-CIDR subnet has them.', src: 'eksPrefix' });
+    if (mp.rule === 'cap') items.push({ k: 'info', t: 'managed node group cap ' + mp.cap, d: 'Managed node groups cap maxPods at ' + mp.cap + ' for this instance size; the custom-networking formula alone would allow ' + (o.prefixDelegation ? mp.prefixFormula : mp.eniFormula) + '.', src: 'eksManagedCap' });
+    return {
+      cloud: 'eks', custom: true, instance: i, maxPods: mp, podsPerNode: pods, perNode: per, azs, nodesPerAz, nodesPlanned,
+      perZone: { need: nodeNeed, prefix: nodeSub.prefix, usable: nodeSub.usable, needWorst: nodeNeed, prefixWorst: nodeSub.prefix },
+      podZone: { need: podNeed, prefix: podSub.prefix, usable: podSub.usable, fits: podSub.fits, needWorst: podNeedWorst, prefixWorst: podSubWorst.prefix },
+      secondary,
+      totals: { nodes: nodesPlanned * azs, pods: nodesPlanned * azs * pods, addresses: (pow2(32 - nodeSub.prefix) + pow2(32 - podSub.prefix)) * azs },
+      items, rules: ['eksCustom', 'eksCustomSetup', 'vpcCidrQuota', 'eksManagedCap', 'eksControlPlane', 'eksReserved'].concat(o.prefixDelegation ? ['eksPrefix', 'eksWarmPrefix'] : ['eksWarmEni']),
     };
   }
 
@@ -589,7 +649,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 // ------------------------------------------------------------ state
 const S = window.S = {
   cloud: 'eks', tab: 'tf',
-  eks: { type: 'm5.large', nodesAz: 5, azs: 3, pods: '', prefix: false, managed: true, cp: 16, svc: '172.20.0.0/16', vpcs: '10.0.0.0/16' },
+  eks: { type: 'm5.large', nodesAz: 5, azs: 3, pods: '', prefix: false, custom: false, managed: true, cp: 16, svc: '172.20.0.0/16', vpcs: '10.0.0.0/16' },
   gke: { autopilot: false, nodes: 30, pods: 110, svcManaged: true, svcPrefix: 20 },
   aks: { mode: 'overlay', nodes: 20, pods: '' },
   surge: 1, growth: 0,
@@ -600,6 +660,7 @@ const PRESETS = {
     { l: 'Dense: m5.2xlarge, 110 pods, prefix delegation', s: { type: 'm5.2xlarge', nodesAz: 10, azs: 3, pods: 110, prefix: true } },
     { l: 'Batch: 50 × c5.4xlarge per zone', s: { type: 'c5.4xlarge', nodesAz: 50, azs: 2, pods: '', prefix: false } },
     { l: 'Graviton: m7g.large, 2 zones', s: { type: 'm7g.large', nodesAz: 4, azs: 2, pods: '', prefix: false } },
+    { l: 'Custom networking: m5.2xlarge, Pods in 100.64', s: { type: 'm5.2xlarge', nodesAz: 10, azs: 2, pods: '', prefix: false, custom: true } },
   ],
   gke: [
     { l: 'Standard, 30 nodes, 110 pods', s: { autopilot: false, nodes: 30, pods: 110 } },
@@ -620,7 +681,7 @@ const QUICK = ['t3.medium', 'm5.large', 'm5.xlarge', 'm5.2xlarge', 'm7g.large', 
 function saveHash() {
   try {
     const o = { c: S.cloud, g: S.growth, s: S.surge };
-    if (S.cloud === 'eks') Object.assign(o, { i: S.eks.type, n: S.eks.nodesAz, z: S.eks.azs, q: S.eks.pods, x: S.eks.prefix ? 1 : 0, m: S.eks.managed ? 1 : 0, p: S.eks.cp, sc: S.eks.svc, vc: S.eks.vpcs });
+    if (S.cloud === 'eks') Object.assign(o, { i: S.eks.type, n: S.eks.nodesAz, z: S.eks.azs, q: S.eks.pods, x: S.eks.prefix ? 1 : 0, cn: S.eks.custom ? 1 : 0, m: S.eks.managed ? 1 : 0, p: S.eks.cp, sc: S.eks.svc, vc: S.eks.vpcs });
     if (S.cloud === 'gke') Object.assign(o, { a: S.gke.autopilot ? 1 : 0, n: S.gke.nodes, q: S.gke.pods, sm: S.gke.svcManaged ? 1 : 0, sp: S.gke.svcPrefix });
     if (S.cloud === 'aks') Object.assign(o, { k: S.aks.mode, n: S.aks.nodes, q: S.aks.pods });
     history.replaceState(null, '', '#' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, ''));
@@ -632,7 +693,7 @@ function loadHash() {
   if (!o || typeof o !== 'object') return false;
   S.cloud = ['eks', 'gke', 'aks'].includes(o.c) ? o.c : 'eks';
   S.growth = +o.g || 0; S.surge = o.s == null ? 1 : +o.s;
-  if (S.cloud === 'eks') { if (o.i && E.eksInstance(o.i)) S.eks.type = o.i; S.eks.nodesAz = +o.n || 5; S.eks.azs = +o.z || 3; S.eks.pods = o.q === '' || o.q == null ? '' : +o.q; S.eks.prefix = !!o.x; S.eks.managed = o.m !== 0; S.eks.cp = +o.p === 6 ? 6 : 16; if (o.sc) S.eks.svc = String(o.sc); if (o.vc != null) S.eks.vpcs = String(o.vc); }
+  if (S.cloud === 'eks') { if (o.i && E.eksInstance(o.i)) S.eks.type = o.i; S.eks.nodesAz = +o.n || 5; S.eks.azs = +o.z || 3; S.eks.pods = o.q === '' || o.q == null ? '' : +o.q; S.eks.prefix = !!o.x; S.eks.custom = !!o.cn; S.eks.managed = o.m !== 0; S.eks.cp = +o.p === 6 ? 6 : 16; if (o.sc) S.eks.svc = String(o.sc); if (o.vc != null) S.eks.vpcs = String(o.vc); }
   if (S.cloud === 'gke') { S.gke.autopilot = !!o.a; S.gke.nodes = +o.n || 30; S.gke.pods = +o.q || 110; S.gke.svcManaged = o.sm !== 0; S.gke.svcPrefix = +o.sp || 20; }
   if (S.cloud === 'aks') { S.aks.mode = E.AKS_MODES[o.k] ? o.k : 'overlay'; S.aks.nodes = +o.n || 20; S.aks.pods = o.q === '' || o.q == null ? '' : +o.q; }
   return true;
@@ -643,17 +704,17 @@ function pushInputs() {
   document.body.dataset.cloud = S.cloud;
   [...$('cloudSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.cloud));
   $('inst').value = S.eks.type; $('nodesAz').value = S.eks.nodesAz; [...$('azSeg').children].forEach(b => b.classList.toggle('on', +b.dataset.v === S.eks.azs));
-  $('podsEks').value = S.eks.pods; $('cpIps').value = String(S.eks.cp); $('prefixSw').checked = S.eks.prefix; $('managedSw').checked = S.eks.managed; $('svcCidr').value = S.eks.svc; $('vpcCidrs').value = S.eks.vpcs;
+  $('podsEks').value = S.eks.pods; $('cpIps').value = String(S.eks.cp); $('prefixSw').checked = S.eks.prefix; $('customSw').checked = S.eks.custom; $('managedSw').checked = S.eks.managed; $('svcCidr').value = S.eks.svc; $('vpcCidrs').value = S.eks.vpcs;
   [...$('gkeMode').children].forEach(b => b.classList.toggle('on', (b.dataset.v === 'autopilot') === S.gke.autopilot));
   $('nodesGke').value = S.gke.nodes; $('podsGke').value = S.gke.pods; $('podsGke').disabled = S.gke.autopilot; $('svcManaged').checked = S.gke.svcManaged; $('svcPrefix').value = String(S.gke.svcPrefix); $('svcPrefixField').style.display = (S.cloud === 'gke' && !S.gke.svcManaged) ? 'flex' : 'none';
   $('aksMode').value = S.aks.mode; $('nodesAks').value = S.aks.nodes; $('podsAks').value = S.aks.pods; $('aksPodsHint').textContent = 'Blank = plugin default (' + E.AKS_MODES[S.aks.mode].defaultMaxPods + '); range 10 to 250';
   $('surge').value = S.surge; $('growth').value = S.growth;
   const pr = $('presets'); pr.innerHTML = PRESETS[S.cloud].map((p, i) => '<button class="chip" data-preset="' + S.cloud + '-' + i + '">' + esc(p.l) + '</button>').join('');
-  pr.querySelectorAll('button').forEach((b, i) => b.onclick = () => { Object.assign(S[S.cloud], PRESETS[S.cloud][i].s); pushInputs(); update(); });
+  pr.querySelectorAll('button').forEach((b, i) => b.onclick = () => { Object.assign(S[S.cloud], S.cloud === 'eks' ? { custom: false } : {}, PRESETS[S.cloud][i].s); pushInputs(); update(); });
 }
 function pullInputs() {
   const n = (id, d) => { const v = $(id).value.trim(); return v === '' ? d : Math.max(0, +v); };
-  S.eks.type = $('inst').value.trim().toLowerCase(); S.eks.nodesAz = n('nodesAz', 1) || 1; S.eks.pods = $('podsEks').value.trim() === '' ? '' : Math.max(1, +$('podsEks').value); S.eks.cp = +$('cpIps').value; S.eks.prefix = $('prefixSw').checked; S.eks.managed = $('managedSw').checked; S.eks.svc = $('svcCidr').value.trim(); S.eks.vpcs = $('vpcCidrs').value;
+  S.eks.type = $('inst').value.trim().toLowerCase(); S.eks.nodesAz = n('nodesAz', 1) || 1; S.eks.pods = $('podsEks').value.trim() === '' ? '' : Math.max(1, +$('podsEks').value); S.eks.cp = +$('cpIps').value; S.eks.prefix = $('prefixSw').checked; S.eks.custom = $('customSw').checked; S.eks.managed = $('managedSw').checked; S.eks.svc = $('svcCidr').value.trim(); S.eks.vpcs = $('vpcCidrs').value;
   S.gke.nodes = n('nodesGke', 1) || 1; S.gke.pods = n('podsGke', 110) || 110; S.gke.svcManaged = $('svcManaged').checked; S.gke.svcPrefix = +$('svcPrefix').value;
   S.aks.mode = $('aksMode').value; S.aks.nodes = n('nodesAks', 1) || 1; S.aks.pods = $('podsAks').value.trim() === '' ? '' : +$('podsAks').value;
   S.surge = n('surge', 1); S.growth = n('growth', 0);
@@ -662,7 +723,7 @@ function pullInputs() {
 // ------------------------------------------------------------ compute + render
 let R = null;
 function compute() {
-  if (S.cloud === 'eks') return E.eksPlan({ type: S.eks.type, nodesPerAz: S.eks.nodesAz, azs: S.eks.azs, podsPerNode: S.eks.pods, prefixDelegation: S.eks.prefix, managed: S.eks.managed, growthPct: S.growth, controlPlaneIps: S.eks.cp });
+  if (S.cloud === 'eks') return E.eksPlan({ type: S.eks.type, nodesPerAz: S.eks.nodesAz, azs: S.eks.azs, podsPerNode: S.eks.pods, prefixDelegation: S.eks.prefix, customNetworking: S.eks.custom, managed: S.eks.managed, growthPct: S.growth, controlPlaneIps: S.eks.cp });
   if (S.cloud === 'gke') return E.gkePlan({ autopilot: S.gke.autopilot, nodes: S.gke.nodes, podsPerNode: S.gke.pods, surge: S.surge, growthPct: S.growth, servicesManaged: S.gke.svcManaged, servicesPrefix: S.gke.svcPrefix });
   return E.aksPlan({ mode: S.aks.mode, nodes: S.aks.nodes, maxPods: S.aks.pods, surge: S.surge, growthPct: S.growth });
 }
@@ -681,6 +742,7 @@ function legend(items) { $('legend').innerHTML = items.map(([cls, t]) => '<span>
 function rangesTable(head, rows) { $('ranges').innerHTML = '<thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + rows.map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody>'; }
 
 function renderEks(r) {
+  if (r.custom) return renderEksCustom(r);
   const i = r.instance, mp = r.maxPods, per = r.perNode;
   $('instHint').textContent = i.type + ': ' + i.enis + ' ENIs × ' + i.ipsPerEni + ' IPv4 per ENI, ' + i.vcpus + ' vCPU, ' + (i.memMib / 1024) + ' GiB';
   $('resTitle').textContent = 'EKS: ' + fmt(r.totals.nodes) + ' × ' + i.type + ' in ' + r.azs + ' zones';
@@ -707,6 +769,79 @@ function renderEks(r) {
   for (let z = 0; z < r.azs; z++) rows.push(['zone ' + String.fromCharCode(97 + z), '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), fmt(per.ips), fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]);
   rows.push(['worst case', '/' + r.perZone.prefixWorst, fmt(r.nodesPlanned), fmt(per.worst), fmt(r.perZone.needWorst), '', 'every ENI slot allocated']);
   rangesTable(['Subnet', 'Prefix', 'Nodes', 'Per node', 'Needed', 'Usable', 'Headroom'], rows);
+}
+function podCidrs() {
+  // the secondary block(s): one block when all zones fit in a /16, otherwise one /16 per zone
+  const r = R;
+  return r.secondary.fits ? [r.secondary.cidr] : Array.from({ length: r.azs }, (_, k) => '100.' + (64 + k) + '.0.0/16');
+}
+function podSubnetCidr(k) {
+  const r = R, size = Math.pow(2, 32 - r.podZone.prefix);
+  if (r.secondary.fits) return E.n2ip(E.ip2n('100.64.0.0') + k * size) + '/' + r.podZone.prefix;
+  return '100.' + (64 + k) + '.0.0/' + r.podZone.prefix;
+}
+function renderEksCustom(r) {
+  const i = r.instance, mp = r.maxPods, per = r.perNode, cp = S.eks.cp, pz = r.podZone;
+  $('instHint').textContent = i.type + ': ' + i.enis + ' ENIs × ' + i.ipsPerEni + ' IPv4 per ENI, ' + i.vcpus + ' vCPU, ' + (i.memMib / 1024) + ' GiB';
+  $('resTitle').textContent = 'EKS custom networking: ' + fmt(r.totals.nodes) + ' × ' + i.type + ' in ' + r.azs + ' zones';
+  $('resNote').textContent = r.nodesPlanned !== r.nodesPerAz ? 'sized for ' + r.nodesPlanned + ' nodes per zone (' + S.growth + '% headroom)' : '';
+  const formulaMax = mp.prefixDelegation ? mp.prefixFormula : mp.eniFormula;
+  $('kpis').innerHTML = kpi(fmt(mp.maxPods), 'max pods per node', mp.rule === 'cap' ? 'capped (formula ' + fmt(formulaMax) + ')' : '(' + i.enis + ' − 1) ENIs serve pods') +
+    kpi(fmt(per.ips), 'VPC addresses per node', '1 in the node subnet + ' + fmt(per.podIps) + ' in the pod subnet') +
+    kpi('/' + r.perZone.prefix, 'node subnet per zone', fmt(r.perZone.usable) + ' usable for ' + fmt(r.perZone.need) + ' needed') +
+    kpi(pz.fits ? '/' + pz.prefix : '> /16', 'pod subnet per zone', fmt(pz.usable) + ' usable for ' + fmt(pz.need) + ' needed') +
+    kpi(r.secondary.fits ? r.secondary.cidr : r.azs + ' × /16', 'secondary CIDR', r.secondary.fits ? r.azs + ' pod subnets of /' + pz.prefix : 'more than one /16 needed');
+  const total = pz.usable, used = r.nodesPlanned * per.podIps, pods = r.nodesPlanned * r.podsPerNode, free = Math.max(0, total - used);
+  $('bar').innerHTML = barSeg('pods', pods, total, 'pod addresses') + barSeg('warm', used - pods, total, 'warm pool and Pod ENI primaries') + barSeg('free', free, total, 'free');
+  legend([['pods', 'pods ' + fmt(pods)], ['warm', 'warm pool + Pod ENI primaries ' + fmt(used - pods)], ['free', 'free ' + fmt(free) + ' of ' + fmt(total)]]);
+  $('barNote').textContent = 'pod subnet /' + pz.prefix + ', one zone (the node subnet holds ' + fmt(r.nodesPlanned) + ' node addresses + ' + cp + ' control plane)';
+  $('formula').textContent = (mp.prefixDelegation
+    ? 'max pods    = min(cap ' + mp.cap + ', (' + i.enis + ' − 1) ENIs × (' + i.ipsPerEni + ' − 1) slots × 16 + 2 = ' + fmt(mp.prefixFormula) + ') = ' + mp.maxPods + '\npod subnet  = ⌈' + r.podsPerNode + ' ÷ 16⌉ + 1 warm = ' + per.prefixes + ' prefixes × 16 + ' + per.enisUsed + ' Pod ENI = ' + per.podIps + ' per node'
+    : 'max pods    = (' + i.enis + ' − 1) ENIs × (' + i.ipsPerEni + ' − 1) + 2 = ' + mp.eniFormula + (mp.rule === 'cap' ? ' → capped at ' + mp.cap : '') + '   (without custom networking: ' + (i.enis * (i.ipsPerEni - 1) + 2) + ')\npod subnet  = ' + per.enisUsed + ' Pod ENIs attached × ' + i.ipsPerEni + ' = ' + per.podIps + ' per node') +
+    '\nnode subnet = ' + r.nodesPlanned + ' nodes × 1 + ' + cp + ' control plane = ' + fmt(r.perZone.need) + ' → /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable)' +
+    '\npod subnet  = ' + r.nodesPlanned + ' nodes × ' + per.podIps + ' = ' + fmt(pz.need) + ' → /' + pz.prefix + ' (' + fmt(pz.usable) + ' usable after the 5 AWS reserves)' +
+    '\nsecondary   = ' + r.azs + ' × /' + pz.prefix + ' → ' + (r.secondary.fits ? r.secondary.cidr : 'more than a /16: one /16 per zone') + ' from 100.64.0.0/10';
+  const rows = [];
+  for (let z = 0; z < r.azs; z++) {
+    const az = String.fromCharCode(97 + z);
+    rows.push(['zone ' + az + ' nodes', '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), '1', fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]);
+    rows.push(['zone ' + az + ' pods <code>' + podSubnetCidr(z) + '</code>', '<b>/' + pz.prefix + '</b>', fmt(r.nodesPlanned), fmt(per.podIps), fmt(pz.need), fmt(pz.usable), fmt(pz.usable - pz.need)]);
+  }
+  rows.push(['secondary CIDR', podCidrs().map(c => '<code>' + c + '</code>').join(' '), '', '', '', '', 'counts toward 5 CIDR blocks per VPC']);
+  rows.push(['worst case, pods', '/' + pz.prefixWorst, fmt(r.nodesPlanned), fmt(per.podWorst), fmt(pz.needWorst), '', pz.needWorst > 65531 ? 'over a /16' : 'every Pod ENI slot allocated']);
+  rangesTable(['Subnet', 'Prefix', 'Nodes', 'Per node', 'Needed', 'Usable', 'Headroom'], rows);
+}
+function tfEksCustom() {
+  const r = R, i = r.instance, pz = r.podZone, one = r.secondary.fits;
+  const azs = JSON.stringify(Array.from({ length: r.azs }, (_, k) => '${data.aws_region.current.region}' + String.fromCharCode(97 + k)));
+  const env = ['      AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"', '      ENI_CONFIG_LABEL_DEF               = "topology.kubernetes.io/zone"'].concat(r.perNode.mode === 'custom-prefix' ? ['      ENABLE_PREFIX_DELEGATION           = "true"', '      WARM_PREFIX_TARGET                 = "1"'] : []);
+  return hdr('#') + '# EKS custom networking: ' + fmt(r.nodesPlanned) + ' x ' + i.type + ' per zone, ' + r.podsPerNode + ' pods per node (primary ENI serves no pods)\n# node subnet per zone: /' + r.perZone.prefix + ' (' + fmt(r.perZone.need) + ' needed); pod subnet per zone: /' + pz.prefix + ' (' + fmt(pz.need) + ' needed)\n\n' +
+'locals {\n  vpc_cidr         = "10.0.0.0/16"\n  azs              = ' + azs + '\n  node_subnet_bits = ' + (r.perZone.prefix - 16) + '  # /16 VPC -> /' + r.perZone.prefix + ' node subnets\n  node_subnets     = [for k, az in local.azs : cidrsubnet(local.vpc_cidr, local.node_subnet_bits, k)]\n' +
+(one ? '  pod_cidr         = "' + r.secondary.cidr + '"  # secondary block from 100.64.0.0/10\n  pod_subnets      = [for k, az in local.azs : cidrsubnet(local.pod_cidr, ' + (pz.prefix - r.secondary.prefix) + ', k)]  # /' + pz.prefix + ' each\n'
+     : '  pod_cidrs        = ' + JSON.stringify(podCidrs()) + '  # one /16 secondary block per zone (counts toward 5 CIDR blocks per VPC)\n  pod_subnets      = [for k, az in local.azs : cidrsubnet(local.pod_cidrs[k], ' + (pz.prefix - 16) + ', 0)]\n') +
+'}\n\ndata "aws_region" "current" {}\n\n' +
+(one ? 'resource "aws_vpc_ipv4_cidr_block_association" "pods" {\n  vpc_id     = aws_vpc.this.id\n  cidr_block = local.pod_cidr\n}\n'
+     : 'resource "aws_vpc_ipv4_cidr_block_association" "pods" {\n  count      = length(local.pod_cidrs)\n  vpc_id     = aws_vpc.this.id\n  cidr_block = local.pod_cidrs[count.index]\n}\n') +
+'\nresource "aws_subnet" "nodes" {\n  for_each          = { for k, az in local.azs : az => local.node_subnets[k] }\n  vpc_id            = aws_vpc.this.id\n  availability_zone = each.key\n  cidr_block        = each.value\n  tags = {\n    Name                              = "eks-nodes-${each.key}"\n    "kubernetes.io/role/internal-elb" = "1"\n  }\n}\n\n' +
+'resource "aws_subnet" "pods" {\n  for_each          = { for k, az in local.azs : az => local.pod_subnets[k] }\n  vpc_id            = aws_vpc.this.id\n  availability_zone = each.key\n  cidr_block        = each.value\n  tags              = { Name = "eks-pods-${each.key}" }\n  depends_on        = [aws_vpc_ipv4_cidr_block_association.pods]\n}\n\n' +
+'resource "aws_eks_cluster" "this" {\n  name     = "demo"\n  role_arn = aws_iam_role.cluster.arn\n  vpc_config {\n    subnet_ids = [for s in aws_subnet.nodes : s.id]\n  }\n  kubernetes_network_config {\n    service_ipv4_cidr = "' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '"\n  }\n}\n\n' +
+'resource "aws_eks_addon" "vpc_cni" {\n  cluster_name = aws_eks_cluster.this.name\n  addon_name   = "vpc-cni"\n  configuration_values = jsonencode({\n    env = {\n' + env.join('\n') + '\n    }\n  })\n}\n\n' +
+'# Create one ENIConfig per zone (see the CLI tab) BEFORE the node group, so new nodes put their pod ENIs in aws_subnet.pods.\nresource "aws_eks_node_group" "default" {\n  cluster_name    = aws_eks_cluster.this.name\n  node_group_name = "default"\n  node_role_arn   = aws_iam_role.node.arn\n  subnet_ids      = [for s in aws_subnet.nodes : s.id]\n  instance_types  = ["' + i.type + '"]\n  scaling_config {\n    desired_size = ' + (r.nodesPerAz * r.azs) + '\n    min_size     = ' + (r.nodesPerAz * r.azs) + '\n    max_size     = ' + (r.nodesPlanned * r.azs) + '\n  }\n  depends_on = [aws_eks_addon.vpc_cni]\n}\n# Expect each node to advertise ' + r.maxPods.maxPods + ' pods: kubectl get node -o jsonpath="{.items[*].status.allocatable.pods}"\n';
+}
+function cliEksCustom() {
+  const r = R, pz = r.podZone;
+  let out = hdr('#') + '# 1. Attach the secondary block(s) for pods\n';
+  podCidrs().forEach(c => { out += 'aws ec2 associate-vpc-cidr-block --vpc-id vpc-0123 --cidr-block ' + c + '\n'; });
+  out += '\n# 2. One pod subnet per zone (' + fmt(pz.usable) + ' usable each)\n';
+  for (let k = 0; k < r.azs; k++) out += 'aws ec2 create-subnet --vpc-id vpc-0123 --availability-zone us-east-1' + String.fromCharCode(97 + k) + ' --cidr-block ' + podSubnetCidr(k) + ' --tag-specifications \'ResourceType=subnet,Tags=[{Key=Name,Value=eks-pods-us-east-1' + String.fromCharCode(97 + k) + '}]\'\n';
+  out += '\n# 3. Tell the VPC CNI to use ENIConfigs named after the zone\nkubectl set env daemonset aws-node -n kube-system AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG=true ENI_CONFIG_LABEL_DEF=topology.kubernetes.io/zone' + (r.perNode.mode === 'custom-prefix' ? ' ENABLE_PREFIX_DELEGATION=true WARM_PREFIX_TARGET=1' : '') + '\n\n# 4. One ENIConfig per zone\n';
+  for (let k = 0; k < r.azs; k++) { const az = 'us-east-1' + String.fromCharCode(97 + k); out += 'cat <<EOF | kubectl apply -f -\napiVersion: crd.k8s.amazonaws.com/v1alpha1\nkind: ENIConfig\nmetadata:\n  name: ' + az + '\nspec:\n  subnet: subnet-REPLACE   # the ' + podSubnetCidr(k) + ' subnet in ' + az + '\n  securityGroups:\n    - sg-REPLACE            # the node security group\nEOF\n'; }
+  out += '\n# 5. Create a NEW node group, then cordon and drain the old nodes; existing nodes keep their ENIs.\n# 6. Check the pods each new node advertises (expect ' + r.maxPods.maxPods + '):\nkubectl get node -o jsonpath=\'{range .items[*]}{.metadata.name}{"\\t"}{.status.allocatable.pods}{"\\n"}{end}\'\n';
+  return out;
+}
+function mdEksCustom() {
+  const r = R, pz = r.podZone;
+  return '| Item | Value |\n|---|---|\n| Instance type | ' + r.instance.type + ' (' + r.instance.enis + ' ENIs × ' + r.instance.ipsPerEni + ' IPs) |\n| Mode | custom networking' + (r.perNode.mode === 'custom-prefix' ? ' + prefix delegation' : '') + ' |\n| Max pods per node | ' + r.maxPods.maxPods + ' |\n| Addresses per node | 1 node subnet + ' + r.perNode.podIps + ' pod subnet |\n| Nodes per zone (planned) | ' + r.nodesPlanned + ' |\n| Zones | ' + r.azs + ' |\n| Node subnet per zone | /' + r.perZone.prefix + ' (' + fmt(r.perZone.need) + ' needed) |\n| Pod subnet per zone | /' + pz.prefix + ' (' + fmt(pz.need) + ' needed) |\n| Secondary CIDR | ' + podCidrs().join(', ') + ' |\n| Pods, whole cluster | ' + fmt(r.totals.pods) + ' |\n\nSource: https://jhooq.com/tools/kubernetes-ip-calculator/' + location.hash + '\n';
 }
 function renderGke(r) {
   $('resTitle').textContent = 'GKE ' + (r.autopilot ? 'Autopilot' : 'Standard') + ': ' + fmt(r.nodes) + ' nodes × ' + r.podsPerNode + ' Pods';
@@ -779,6 +914,10 @@ function renderSvc() {
 // ------------------------------------------------------------ planner hand-off
 function plannerHash() {
   const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, '');
+  if (S.cloud === 'eks' && R.custom) {
+    const p = Math.min(28, Math.max(16, R.perZone.prefix - E.log2ceil(R.azs) - 1));
+    return enc({ c: 'aws', a: '10.0.0.0', p, z: R.azs, f: 0, k: 1, g: 0, e: podCidrs().map(c => c + ' eks pod subnets (secondary CIDR)').join('\n'), t: [['eks-nodes', 'private', 'prefix', R.perZone.prefix], ['public', 'public', 'prefix', Math.min(28, R.perZone.prefix + 1)]], r: 1, s: 6, v: 'x' });
+  }
   if (S.cloud === 'eks') {
     const p = Math.min(28, Math.max(16, R.perZone.prefix - E.log2ceil(R.azs) - 1));
     return enc({ c: 'aws', a: '10.0.0.0', p, z: R.azs, f: 0, k: 1, g: 0, e: '', t: [['eks-nodes', 'private', 'prefix', R.perZone.prefix], ['public', 'public', 'prefix', Math.min(28, R.perZone.prefix + 2)]], r: 1, s: 6, v: 'x' });
@@ -806,12 +945,14 @@ function code() {
 }
 const hdr = (c) => c + ' Sizing from the Kubernetes IP Calculator - https://jhooq.com/tools/kubernetes-ip-calculator/' + (location.hash ? '\n' + c + ' Reproduce: ' + location.href : '') + '\n';
 function tfEks() {
+  if (R.custom) return tfEksCustom();
   const r = R, i = r.instance;
   return hdr('#') + '# ' + fmt(r.nodesPlanned) + ' x ' + i.type + ' per zone, ' + r.podsPerNode + ' pods per node, ' + (r.perNode.mode === 'prefix' ? 'prefix delegation' : 'secondary IP mode') + '\n# subnet per zone: /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable, ' + fmt(r.perZone.need) + ' needed)\n\n' +
 'locals {\n  vpc_cidr        = "10.0.0.0/16"\n  azs             = ' + JSON.stringify(Array.from({ length: r.azs }, (_, k) => 'a' + k).map((_, k) => '${data.aws_region.current.region}' + String.fromCharCode(97 + k))).replace(/"\$\{/g, '"${') + '\n  node_subnet_bits = ' + (r.perZone.prefix - 16) + '  # /16 VPC -> /' + r.perZone.prefix + ' subnets\n  node_subnets    = [for k, az in local.azs : cidrsubnet(local.vpc_cidr, local.node_subnet_bits, k)]\n}\n\ndata "aws_region" "current" {}\n\nresource "aws_subnet" "nodes" {\n  for_each          = { for k, az in local.azs : az => local.node_subnets[k] }\n  vpc_id            = aws_vpc.this.id\n  availability_zone = each.key\n  cidr_block        = each.value\n  tags = {\n    Name                              = "eks-nodes-${each.key}"\n    "kubernetes.io/role/internal-elb" = "1"\n  }\n}\n\nresource "aws_eks_cluster" "this" {\n  name     = "demo"\n  role_arn = aws_iam_role.cluster.arn\n  vpc_config {\n    subnet_ids = [for s in aws_subnet.nodes : s.id]\n  }\n  kubernetes_network_config {\n    service_ipv4_cidr = "' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '"  # /12 to /24, private, not overlapping the VPC\n  }\n}\n\nresource "aws_eks_node_group" "default" {\n  cluster_name    = aws_eks_cluster.this.name\n  node_group_name = "default"\n  node_role_arn   = aws_iam_role.node.arn\n  subnet_ids      = [for s in aws_subnet.nodes : s.id]\n  instance_types  = ["' + i.type + '"]\n  scaling_config {\n    desired_size = ' + (r.nodesPerAz * r.azs) + '\n    min_size     = ' + (r.nodesPerAz * r.azs) + '\n    max_size     = ' + (r.nodesPlanned * r.azs) + '\n  }\n}\n' +
 (r.perNode.mode === 'prefix' ? '\nresource "aws_eks_addon" "vpc_cni" {\n  cluster_name = aws_eks_cluster.this.name\n  addon_name   = "vpc-cni"\n  configuration_values = jsonencode({\n    env = {\n      ENABLE_PREFIX_DELEGATION = "true"\n      WARM_PREFIX_TARGET       = "1"\n    }\n  })\n}\n' : '\n# Each node holds ' + r.perNode.ips + ' VPC addresses for ' + r.podsPerNode + ' pods (every attached ENI is fully allocated). To hold fewer, set WARM_IP_TARGET and MINIMUM_IP_TARGET on the vpc-cni add-on.\n');
 }
 function cliEks() {
+  if (R.custom) return cliEksCustom();
   const r = R, i = r.instance;
   return hdr('#') + '# eksctl ClusterConfig\napiVersion: eksctl.io/v1alpha5\nkind: ClusterConfig\nmetadata:\n  name: demo\n  region: us-east-1\nkubernetesNetworkConfig:\n  serviceIPv4CIDR: ' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '\nvpc:\n  cidr: 10.0.0.0/16   # ' + r.azs + ' node subnets of /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable each)\n' + (r.perNode.mode === 'prefix' ? 'addons:\n  - name: vpc-cni\n    configurationValues: |\n      env:\n        ENABLE_PREFIX_DELEGATION: "true"\n        WARM_PREFIX_TARGET: "1"\n' : '') + 'managedNodeGroups:\n  - name: default\n    instanceType: ' + i.type + '\n    desiredCapacity: ' + (r.nodesPerAz * r.azs) + '\n    maxSize: ' + (r.nodesPlanned * r.azs) + '\n    maxPodsPerNode: ' + r.podsPerNode + '   # formula ' + (r.perNode.mode === 'prefix' ? fmt(r.maxPods.prefixFormula) + ', cap ' + r.maxPods.cap : r.maxPods.eniFormula + (r.maxPods.rule === 'cap' ? ', cap ' + r.maxPods.cap : '')) + '\n\n# Check what a running node advertises:\n# kubectl get node -o jsonpath=\'{range .items[*]}{.metadata.name}{"\\t"}{.status.allocatable.pods}{"\\n"}{end}\'\n# Count free addresses in a subnet:\n# aws ec2 describe-subnets --subnet-ids subnet-0123 --query \'Subnets[0].AvailableIpAddressCount\'\n';
 }
@@ -833,6 +974,7 @@ function cliAks() {
 }
 function md() {
   const r = R;
+  if (S.cloud === 'eks' && r.custom) return mdEksCustom();
   if (S.cloud === 'eks') return '| Item | Value |\n|---|---|\n| Instance type | ' + r.instance.type + ' (' + r.instance.enis + ' ENIs × ' + r.instance.ipsPerEni + ' IPs) |\n| Mode | ' + (r.perNode.mode === 'prefix' ? 'prefix delegation' : 'secondary IPs') + ' |\n| Max pods per node | ' + r.maxPods.maxPods + ' |\n| VPC addresses per node | ' + r.perNode.ips + ' |\n| Nodes per zone (planned) | ' + r.nodesPlanned + ' |\n| Zones | ' + r.azs + ' |\n| Subnet per zone | /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable, ' + fmt(r.perZone.need) + ' needed) |\n| Pods, whole cluster | ' + fmt(r.totals.pods) + ' |\n\nSource: https://jhooq.com/tools/kubernetes-ip-calculator/' + location.hash + '\n';
   if (S.cloud === 'gke') return '| Item | Value |\n|---|---|\n| Mode | ' + (r.autopilot ? 'Autopilot' : 'Standard') + ' |\n| Max Pods per node | ' + r.podsPerNode + ' |\n| Pod range per node | /' + r.perNode.prefix + ' |\n| Nodes (planned) | ' + r.nodesPlanned + ' |\n| Pod secondary range | /' + r.podRange.prefix + ' (' + fmt(r.podRange.maxNodes) + ' nodes) |\n| Primary range | /' + r.primary.prefix + ' (' + fmt(r.primary.usable) + ' usable) |\n| Services | ' + (r.services.managed ? 'GKE-managed 34.118.224.0/20' : '/' + r.services.prefix) + ' |\n\nSource: https://jhooq.com/tools/kubernetes-ip-calculator/' + location.hash + '\n';
   return '| Item | Value |\n|---|---|\n| Plugin | ' + r.modeLabel + ' |\n| Max pods per node | ' + r.maxPods + ' |\n| Nodes (planned) | ' + r.nodesPlanned + ' |\n| Node subnet | /' + r.nodeSubnet.prefix + ' (' + fmt(r.nodeSubnet.usable) + ' usable, ' + fmt(r.nodeSubnet.need) + ' needed) |\n' + (r.podSpace ? '| ' + r.podSpace.kind + ' | /' + r.podSpace.prefix + ' |\n' : '') + '| Pods, whole cluster | ' + fmt(r.totals.pods) + ' |\n\nSource: https://jhooq.com/tools/kubernetes-ip-calculator/' + location.hash + '\n';
@@ -850,7 +992,7 @@ function init() {
   [...$('azSeg').children].forEach(b => b.onclick = () => { S.eks.azs = +b.dataset.v; pushInputs(); update(); });
   [...$('gkeMode').children].forEach(b => b.onclick = () => { S.gke.autopilot = b.dataset.v === 'autopilot'; pushInputs(); update(); });
   [...$('tabs').children].forEach(b => b.onclick = () => { S.tab = b.dataset.v; renderCode(); });
-  ['inst', 'nodesAz', 'podsEks', 'cpIps', 'prefixSw', 'managedSw', 'svcCidr', 'vpcCidrs', 'nodesGke', 'podsGke', 'svcManaged', 'svcPrefix', 'aksMode', 'nodesAks', 'podsAks', 'surge', 'growth'].forEach(id => { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
+  ['inst', 'nodesAz', 'podsEks', 'cpIps', 'prefixSw', 'customSw', 'managedSw', 'svcCidr', 'vpcCidrs', 'nodesGke', 'podsGke', 'svcManaged', 'svcPrefix', 'aksMode', 'nodesAks', 'podsAks', 'surge', 'growth'].forEach(id => { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
   $('copyCode').onclick = () => navigator.clipboard.writeText($('code').textContent).then(() => toast('Copied'));
   $('shareBtn').onclick = () => { saveHash(); navigator.clipboard.writeText(location.href).then(() => toast('Link copied - it reproduces this calculation')); };
   $('printBtn').onclick = () => window.print();

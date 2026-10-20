@@ -18,6 +18,7 @@ Single HTML file, no build step for users, nothing leaves the browser. The share
 |---|---|---|---|
 | EKS, VPC CNI secondary IPs | `ENIs x (IPs per ENI - 1) + 2`; managed node groups cap at 110 (< 30 vCPU) or 250 | every attached ENI is fully allocated; `WARM_ENI_TARGET` 1 keeps a spare ENI | [EKS instance types](https://docs.aws.amazon.com/eks/latest/userguide/choosing-instance-type.html), [VPC CNI README](https://github.com/aws/amazon-vpc-cni-k8s/blob/master/README.md) |
 | EKS, prefix delegation | `slots x 16 + 2`, capped at 110 or 250 | prefixes x 16 + one primary per ENI; needs contiguous /28 blocks | [EKS prefix mode](https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-linux.html) |
+| EKS, custom networking | `(ENIs - 1) x (IPs per ENI - 1) + 2` (m5.large: 20), or `x 16` with prefixes (290); same cap | 1 address per node in the node subnet; Pod ENIs and their addresses in a per-zone subnet from a secondary CIDR (100.64.0.0/10); 5 IPv4 CIDR blocks per VPC by default | [EKS custom networking](https://docs.aws.amazon.com/eks/latest/best-practices/custom-networking.html), [tutorial](https://docs.aws.amazon.com/eks/latest/userguide/cni-custom-network-tutorial.html), [VPC quotas](https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html) |
 | EKS, cluster subnets | - | 6 free addresses per subnet minimum (16 recommended), 2 AZs; service CIDR /12 to /24 in a private range, no VPC overlap | [EKS network requirements](https://docs.aws.amazon.com/eks/latest/userguide/network-reqs.html), [API reference](https://docs.aws.amazon.com/eks/latest/APIReference/API_KubernetesNetworkConfigRequest.html) |
 | GKE, VPC-native | 8 to 256 (default 110, Autopilot 32) | node Pod range `/(31 - ceil(log2(pods)))`; node pool Pod range >= /24; primary range reserves 4 | [GKE max Pods per node](https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr), [VPC-native clusters](https://cloud.google.com/kubernetes-engine/docs/concepts/alias-ips) |
 | AKS, Azure CNI Overlay | 250 | one VNet address per node; pods from a /24 per node out of the pod CIDR (default 10.244.0.0/16) | [AKS IP planning](https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning) |
@@ -61,11 +62,13 @@ E.eksPerNodeIps('m5.large', { pods: 29 });              // { ips: 30, enisUsed: 
 E.eksPlan({ type: 'm5.large', nodesPerAz: 10, azs: 2 }); // perZone.prefix 23, perZone.need 316
 E.gkePlan({ nodes: 900, podsPerNode: 110, surge: 0 });   // podRange.prefix 14
 E.aksPlan({ mode: 'nodesubnet', nodes: 50, maxPods: 30 }); // nodeSubnet.need 1581, prefix 21
+E.eksPlan({ type: 'm5.2xlarge', nodesPerAz: 10, azs: 2, customNetworking: true });
+// maxPods 44, node subnet /27 per zone, pod subnet /23 per zone, secondary 100.64.0.0/22
 ```
 
 ## What it does not model
 
-Windows nodes, IPv6 clusters, EKS custom networking with secondary CIDRs, security groups for pods (branch ENIs), GKE multi-Pod CIDR, AKS static block allocation. Pull requests with a documented rule and a test are welcome.
+Windows nodes, IPv6 clusters, security groups for pods (branch ENIs), GKE multi-Pod CIDR, AKS static block allocation. Pull requests with a documented rule and a test are welcome.
 
 ## Licence
 

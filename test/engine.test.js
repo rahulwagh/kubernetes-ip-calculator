@@ -112,3 +112,24 @@ test('prefixFor respects reserved addresses and bounds', () => {
   assert.equal(E.prefixFor(1, 5, 28, 16).prefix, 28);
   assert.equal(E.prefixFor(1e9, 5, 28, 16).fits, false);
 });
+
+// ---- EKS custom networking (best-practices page: m5.large 20, with prefixes 290)
+test('EKS custom networking max pods matches the AWS example', () => {
+  assert.equal(E.eksMaxPods('m5.large', { customNetworking: true, managed: false }).eniFormula, 20);
+  assert.equal(E.eksMaxPods('m5.large', { customNetworking: true, prefixDelegation: true, managed: false }).prefixFormula, 290);
+  assert.equal(E.eksMaxPods('m5.large', { customNetworking: true, prefixDelegation: true }).maxPods, 110);
+  assert.equal(E.eksMaxPods('m5.2xlarge', { customNetworking: true }).maxPods, 44);
+});
+test('EKS custom networking splits node and pod subnets', () => {
+  const per = E.eksPerNodeIps('m5.2xlarge', { customNetworking: true });  // 44 pods -> 3 Pod ENIs x 15
+  assert.equal(per.nodeIps, 1); assert.equal(per.podIps, 45); assert.equal(per.ips, 46);
+  const r = E.eksPlan({ type: 'm5.2xlarge', nodesPerAz: 10, azs: 2, customNetworking: true });
+  assert.equal(r.perZone.need, 26); assert.equal(r.perZone.prefix, 27);       // 10 nodes + 16 control plane
+  assert.equal(r.podZone.need, 450); assert.equal(r.podZone.prefix, 23);      // 507 usable
+  assert.equal(r.secondary.cidr, '100.64.0.0/22');
+  assert.ok(r.items.some(i => i.t.startsWith('max pods drops from 58 to 44')));
+});
+test('EKS custom networking warns when pod subnets outgrow one /16 secondary block', () => {
+  const r = E.eksPlan({ type: 'm6i.32xlarge', nodesPerAz: 100, azs: 3, customNetworking: true });
+  assert.ok(r.items.some(i => i.k === 'warn' && /more than one \/16/.test(i.t)) || r.items.some(i => i.k === 'bad'));
+});
