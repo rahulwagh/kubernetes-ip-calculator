@@ -19,6 +19,8 @@ Single HTML file, no build step for users, nothing leaves the browser. The share
 | EKS, VPC CNI secondary IPs | `ENIs x (IPs per ENI - 1) + 2`; managed node groups cap at 110 (< 30 vCPU) or 250 | every attached ENI is fully allocated; `WARM_ENI_TARGET` 1 keeps a spare ENI | [EKS instance types](https://docs.aws.amazon.com/eks/latest/userguide/choosing-instance-type.html), [VPC CNI README](https://github.com/aws/amazon-vpc-cni-k8s/blob/master/README.md) |
 | EKS, prefix delegation | `slots x 16 + 2`, capped at 110 or 250 | prefixes x 16 + one primary per ENI; needs contiguous /28 blocks | [EKS prefix mode](https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-linux.html) |
 | EKS, custom networking | `(ENIs - 1) x (IPs per ENI - 1) + 2` (m5.large: 20), or `x 16` with prefixes (290); same cap | 1 address per node in the node subnet; Pod ENIs and their addresses in a per-zone subnet from a secondary CIDR (100.64.0.0/10); 5 IPv4 CIDR blocks per VPC by default | [EKS custom networking](https://docs.aws.amazon.com/eks/latest/best-practices/custom-networking.html), [tutorial](https://docs.aws.amazon.com/eks/latest/userguide/cni-custom-network-tutorial.html), [VPC quotas](https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html) |
+| EKS, Windows nodes | `IPs per ENI - 1` on the single ENI (m5.large: 9), or `x 16` with Windows prefix delegation (144); kubelet max-pods default 110 | primary + one per Pod + warm-ip-target 1 (minimum-ip-target 3), or primary + prefixes x 16 | [Windows support](https://docs.aws.amazon.com/eks/latest/userguide/windows-support.html), [prefix mode for Windows](https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-win.html) |
+| EKS, IPv6 cluster | `(ENIs x (IPs per ENI - 1) x 16) + 2`, same cap; prefix delegation mandatory | one IPv4 per node; Pods and Services IPv6 only; /80 per node from the subnet /64; Nitro only; no custom networking; set at creation | [IPv6 clusters](https://docs.aws.amazon.com/eks/latest/userguide/cni-ipv6.html), [IPv6 best practices](https://docs.aws.amazon.com/eks/latest/best-practices/ipv6.html) |
 | EKS, cluster subnets | - | 6 free addresses per subnet minimum (16 recommended), 2 AZs; service CIDR /12 to /24 in a private range, no VPC overlap | [EKS network requirements](https://docs.aws.amazon.com/eks/latest/userguide/network-reqs.html), [API reference](https://docs.aws.amazon.com/eks/latest/APIReference/API_KubernetesNetworkConfigRequest.html) |
 | GKE, VPC-native | 8 to 256 (default 110, Autopilot 32) | node Pod range `/(31 - ceil(log2(pods)))`; node pool Pod range >= /24; primary range reserves 4 | [GKE max Pods per node](https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr), [VPC-native clusters](https://cloud.google.com/kubernetes-engine/docs/concepts/alias-ips) |
 | AKS, Azure CNI Overlay | 250 | one VNet address per node; pods from a /24 per node out of the pod CIDR (default 10.244.0.0/16) | [AKS IP planning](https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning) |
@@ -41,7 +43,7 @@ index.html                the built page, what jhooq.com serves
 ```
 
 ```bash
-npm test          # node --test test/engine.test.js, 16 tests: EKS max-pods values, GKE table and 900-node example, AKS 1,581-address example ...
+npm test          # node --test test/engine.test.js, 21 tests: EKS max-pods values, GKE table and 900-node example, AKS 1,581-address example ...
 npm run build     # src/index.template.html + engine.js + data -> index.html
 ./scripts/update-eks-data.sh   # refresh the EC2 table when AWS adds instance types
 ```
@@ -68,7 +70,7 @@ E.eksPlan({ type: 'm5.2xlarge', nodesPerAz: 10, azs: 2, customNetworking: true }
 
 ## What it does not model
 
-Windows nodes, IPv6 clusters, security groups for pods (branch ENIs), GKE multi-Pod CIDR, AKS static block allocation. Pull requests with a documented rule and a test are welcome.
+Security groups for pods (branch ENIs), GKE multi-Pod CIDR, AKS static block allocation. Pull requests with a documented rule and a test are welcome.
 
 ## Licence
 

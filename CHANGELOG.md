@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 - 2026-10-21
+
+- Windows node OS: single-ENI rule (`IPs per ENI - 1`, `x 16` with Windows prefix delegation, kubelet default 110) with the Windows IPAM warm pool (warm-ip-target 1, minimum-ip-target 3); the AWS userguide and best-practices examples (m5.large 9 / 144, c5.large 144) are test fixtures.
+- IPv6 IP family: prefix delegation forced, max pods from the prefix formula and cap (m5.large 434 -> 110), one IPv4 per node plus control plane in the IPv4 subnet, /56 VPC -> /64 per subnet -> /80 per node; custom networking blocked; Terraform export with `assign_generated_ipv6_cidr_block`, `ipv6_cidr_block`, `ip_family = "ipv6"` (validated on hashicorp/aws 6.69.1), eksctl `ipFamily: IPv6`.
+- Share link keys `os` (l/w) and `v6`; two presets; two FAQ entries.
+
 ## 1.1.0 - 2026-10-20
 
 - EKS custom networking mode: max pods from `(ENIs - 1) x (IPs per ENI - 1) + 2` (and `x 16` with prefix delegation), matching the AWS best-practices example (m5.large: 20, or 290 with prefixes before the 110 cap).

@@ -24,6 +24,10 @@
     eksCustom: { text: 'Custom networking: Pods use secondary ENIs in the ENIConfig subnet; the primary ENI serves no Pods, so max pods = (ENIs - 1) x (IPs per ENI - 1) + 2 (m5.large: 20)', url: 'https://docs.aws.amazon.com/eks/latest/best-practices/custom-networking.html' },
     eksCustomSetup: { text: 'Custom networking setup: one ENIConfig per Availability Zone, AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG=true, ENI_CONFIG_LABEL_DEF=topology.kubernetes.io/zone, new nodes only; with your own AMI set maxPods yourself', url: 'https://docs.aws.amazon.com/eks/latest/userguide/cni-custom-network-tutorial.html' },
     vpcCidrQuota: { text: 'IPv4 CIDR blocks per VPC: 5 by default (adjustable to 50), the primary block included; secondary blocks /16 to /28, 100.64.0.0/10 allowed', url: 'https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html' },
+    eksWindows: { text: 'Windows nodes use a single ENI: available Pod addresses = IPs per interface - 1, or (IPs per interface - 1) x 16 with prefix delegation; kubelet max-pods defaults to 110', url: 'https://docs.aws.amazon.com/eks/latest/userguide/windows-support.html' },
+    eksWindowsPrefix: { text: 'Windows IPAM warm pool defaults: warm-ip-target 1, minimum-ip-target 3; prefixes need contiguous /28 blocks', url: 'https://docs.aws.amazon.com/eks/latest/best-practices/prefix-mode-win.html' },
+    eksIpv6: { text: 'IPv6 clusters: Nitro nodes, prefix delegation required, each node gets a /80 IPv6 prefix and one IPv4 address; Pods and Services are IPv6 only; no custom networking; subnets need an IPv6 /64 from the VPC /56', url: 'https://docs.aws.amazon.com/eks/latest/userguide/cni-ipv6.html' },
+    eksIpv6Pods: { text: 'IPv6 max pods = (ENIs x (slots per ENI - 1) x 16) + 2, then the managed node group cap; the limit becomes CPU and memory, not addresses', url: 'https://docs.aws.amazon.com/eks/latest/best-practices/ipv6.html' },
     eksReserved: { text: 'AWS reserves the first four and the last address of every subnet; subnets are /28 to /16', url: 'https://docs.aws.amazon.com/vpc/latest/userguide/subnet-sizing.html' },
     gkeNodeRange: { text: 'Node Pod range M = 31 - ceil(log2(maxPodsPerNode)); 8..256 pods per node, default 110, Autopilot fixed 32', url: 'https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr' },
     gkeNodePoolMin: { text: 'A node pool Pod secondary range must be at least /24', url: 'https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr' },
@@ -77,17 +81,28 @@
     const i = typeof type === 'string' ? eksInstance(type) : type;
     if (!i) return null;
     const custom = !!o.customNetworking;
-    const podEnis = custom ? Math.max(0, i.enis - 1) : i.enis; // custom networking: the primary ENI serves no Pods
+    const windows = o.os === 'windows';
+    const ipv6 = o.ipFamily === 'ipv6';
+    const podEnis = windows ? 1 : (custom ? Math.max(0, i.enis - 1) : i.enis); // Windows: one ENI; custom networking: primary ENI serves no Pods
     const slots = podEnis * (i.ipsPerEni - 1);
-    const eniFormula = slots + 2;
-    const prefixFormula = slots * 16 + 2;
+    const eniFormula = windows ? slots : slots + 2;          // Windows: no +2, the limit is addresses on the single ENI
+    const prefixFormula = windows ? slots * 16 : slots * 16 + 2;
     const cap = eksCap(i.vcpus);
     const managed = o.managed !== false;
     let maxPods, rule;
+    if (windows) {
+      const addr = o.prefixDelegation ? prefixFormula : eniFormula;
+      maxPods = Math.min(addr, 110); rule = maxPods === 110 && addr > 110 ? 'kubelet-default' : (o.prefixDelegation ? 'prefix' : 'eni');
+      return { instance: i, eniFormula, prefixFormula, cap: 110, managed, prefixDelegation: !!o.prefixDelegation, customNetworking: false, windows: true, ipv6: false, podEnis, maxPods, rule };
+    }
+    if (ipv6) {
+      maxPods = Math.min(prefixFormula, cap); rule = maxPods === cap ? 'cap' : 'prefix';
+      return { instance: i, eniFormula, prefixFormula, cap, managed, prefixDelegation: true, customNetworking: false, windows: false, ipv6: true, podEnis, maxPods, rule };
+    }
     if (o.prefixDelegation) { maxPods = Math.min(prefixFormula, cap); rule = maxPods === cap ? 'cap' : 'prefix'; }
     else if (managed) { maxPods = Math.min(eniFormula, cap); rule = maxPods === cap && eniFormula > cap ? 'cap' : 'eni'; }
     else { maxPods = eniFormula; rule = 'eni'; }
-    return { instance: i, eniFormula, prefixFormula, cap, managed, prefixDelegation: !!o.prefixDelegation, customNetworking: custom, podEnis, maxPods, rule };
+    return { instance: i, eniFormula, prefixFormula, cap, managed, prefixDelegation: !!o.prefixDelegation, customNetworking: custom, windows: false, ipv6: false, podEnis, maxPods, rule };
   }
 
   // VPC addresses one node takes from its subnet when it runs `pods` pods
@@ -98,6 +113,22 @@
     const mp = eksMaxPods(i, o);
     const pods = Math.min(o.pods == null ? mp.maxPods : o.pods, mp.maxPods);
     const slotsPerEni = i.ipsPerEni - 1;
+    if (mp.ipv6) {
+      // IPv6: the node takes one IPv4 address from the dual-stack subnet; Pods live in the node's /80 IPv6 prefix
+      return { mode: 'ipv6', pods, enisUsed: 1, nodeIps: 1, podIps: 0, ips: 1, worst: 1, maxPods: mp.maxPods, ipv6PrefixPerNode: 80, note: 'one IPv4 per node; Pods use the /80 IPv6 prefix' };
+    }
+    if (mp.windows) {
+      // Windows IPAM (VPC resource controller) on the single ENI: warm-ip-target 1, minimum-ip-target 3
+      if (o.prefixDelegation) {
+        const warm = o.warmPrefixTarget == null ? 1 : o.warmPrefixTarget;
+        const prefixes = Math.min(Math.max(1, Math.ceil(pods / 16)) + Math.max(0, warm - 1) + (pods % 16 === 0 ? 1 : 0) * 0, slotsPerEni);
+        const ips = 1 + prefixes * 16;
+        return { mode: 'windows-prefix', windows: true, pods, prefixes, enisUsed: 1, ips, worst: 1 + slotsPerEni * 16, maxPods: mp.maxPods, note: 'single ENI: primary + prefixes x 16' };
+      }
+      const warm = o.warmIpTarget == null ? 1 : o.warmIpTarget;
+      const ips = 1 + Math.min(slotsPerEni, Math.max(pods + warm, 3));
+      return { mode: 'windows', windows: true, pods, enisUsed: 1, ips, worst: i.ipsPerEni, maxPods: mp.maxPods, note: 'single ENI: primary + pods + warm-ip-target ' + warm + ' (minimum-ip-target 3)' };
+    }
     if (o.customNetworking) {
       // node subnet keeps only the primary ENI's own address; every Pod ENI and its addresses live in the ENIConfig (pod) subnet
       const podEnis = mp.podEnis;
@@ -160,7 +191,9 @@
     const pods = o.podsPerNode == null || o.podsPerNode === '' ? mp.maxPods : Math.min(+o.podsPerNode, mp.maxPods);
     const per = eksPerNodeIps(i, Object.assign({}, o, { pods }));
     const nodesPlanned = Math.ceil(nodesPerAz * (1 + growth));
-    if (o.customNetworking) return eksPlanCustom(o, i, azs, nodesPerAz, nodesPlanned, cp, mp, pods, per);
+    if (mp.ipv6) return eksPlanIpv6(o, i, azs, nodesPerAz, nodesPlanned, cp, mp, pods, per);
+    if (mp.windows) { /* falls through to the standard subnet sizing with Windows per-node numbers */ }
+    else if (o.customNetworking) return eksPlanCustom(o, i, azs, nodesPerAz, nodesPlanned, cp, mp, pods, per);
     const need = nodesPlanned * per.ips + cp;
     const needWorst = nodesPlanned * per.worst + cp;
     const sub = prefixFor(need, 5, 28, 16);
@@ -168,18 +201,43 @@
     const items = [];
     if (azs < 2) items.push({ k: 'bad', t: 'one Availability Zone', d: 'EKS needs subnets in at least two Availability Zones.', src: 'eksControlPlane' });
     if (!sub.fits) items.push({ k: 'bad', t: 'does not fit a /16', d: need + ' addresses per zone exceed the largest AWS subnet. Split the node group or use prefix delegation.', src: 'eksReserved' });
+    if (mp.windows) {
+      items.push({ k: 'info', t: 'Windows: one ENI per node', d: i.type + ' keeps only its primary ENI on Windows, so Pod addresses are ' + (o.prefixDelegation ? '(' + i.ipsPerEni + ' - 1) x 16 = ' + mp.prefixFormula : i.ipsPerEni + ' - 1 = ' + mp.eniFormula) + '; kubelet max-pods defaults to 110.', src: 'eksWindows' });
+      if (!o.prefixDelegation && mp.eniFormula < 30) items.push({ k: 'warn', t: 'only ' + mp.eniFormula + ' Pods per Windows node', d: 'Turn on Windows prefix delegation (enable-windows-prefix-delegation in the amazon-vpc-cni config map) or pick a type with more IPs per ENI.', src: 'eksWindowsPrefix' });
+    }
     if (o.prefixDelegation) items.push({ k: 'info', t: 'prefix delegation needs contiguous /28 blocks', d: 'Prefixes come from free, aligned 16-address blocks. A fragmented subnet makes prefix attachment fail; reserve space with a subnet CIDR reservation or use a fresh subnet.', src: 'eksPrefix' });
     if (!o.prefixDelegation && (+o.podsPerNode || 0) > mp.eniFormula) items.push({ k: 'warn', t: 'pods per node above the ENI limit', d: 'This instance type supports ' + mp.eniFormula + ' pods without prefix delegation. Turn prefix delegation on or pick a bigger type.', src: 'eksMaxPodsFormula' });
     if (mp.rule === 'cap') items.push({ k: 'info', t: 'managed node group cap ' + mp.cap, d: 'Managed node groups cap maxPods at ' + mp.cap + ' for this instance size; the formula alone would allow ' + (o.prefixDelegation ? mp.prefixFormula : mp.eniFormula) + '.', src: 'eksManagedCap' });
     if (!o.prefixDelegation && per.ips > pods * 1.5 && pods >= 10) items.push({ k: 'info', t: 'warm pool is ' + (per.ips - pods) + ' addresses per node', d: 'With WARM_ENI_TARGET 1 each node holds a whole spare ENI. Set WARM_IP_TARGET and MINIMUM_IP_TARGET to shrink it.', src: 'eksWarmEni' });
     const perZoneUsable = sub.usable;
     return {
-      cloud: 'eks', instance: i, maxPods: mp, podsPerNode: pods, perNode: per, azs, nodesPerAz, nodesPlanned,
+      cloud: 'eks', windows: !!mp.windows, instance: i, maxPods: mp, podsPerNode: pods, perNode: per, azs, nodesPerAz, nodesPlanned,
       perZone: { need, needWorst, prefix: sub.prefix, usable: perZoneUsable, prefixWorst: subWorst.prefix },
       totals: { nodes: nodesPlanned * azs, pods: nodesPlanned * azs * pods, addresses: pow2(32 - sub.prefix) * azs },
-      items, rules: ['eksMaxPodsFormula', 'eksManagedCap', 'eksControlPlane', 'eksReserved'].concat(o.prefixDelegation ? ['eksPrefix', 'eksWarmPrefix'] : ['eksWarmEni']),
+      items, rules: (mp.windows ? ['eksWindows', 'eksWindowsPrefix'] : ['eksMaxPodsFormula']).concat(['eksManagedCap', 'eksControlPlane', 'eksReserved']).concat(o.prefixDelegation && !mp.windows ? ['eksPrefix', 'eksWarmPrefix'] : mp.windows ? [] : ['eksWarmEni']),
     };
   }
+
+  // IPv6 cluster: IPv4 subnet holds one address per node plus the control plane; Pods come from the node's /80 inside the subnet's /64
+  function eksPlanIpv6(o, i, azs, nodesPerAz, nodesPlanned, cp, mp, pods, per) {
+    const items = [];
+    const need = nodesPlanned * 1 + cp;
+    const sub = prefixFor(need, 5, 28, 16);
+    if (azs < 2) items.push({ k: 'bad', t: 'one Availability Zone', d: 'EKS needs subnets in at least two Availability Zones.', src: 'eksControlPlane' });
+    if (i.vcpus < 2 && /^(t2|m1|m3|c1|c3|m2|r3|i2|g2)\./.test(i.type)) items.push({ k: 'bad', t: i.type + ' is not Nitro', d: 'IPv6 clusters need Nitro-based instances because prefix delegation is required.', src: 'eksIpv6' });
+    items.push({ k: 'info', t: 'Pods are IPv6 only; the IPv4 subnet holds nodes, not Pods', d: 'Each node takes one IPv4 address from the dual-stack subnet and a /80 IPv6 prefix for its Pods (about 10^14 addresses). A /64 per subnet holds 65,536 node prefixes.', src: 'eksIpv6' });
+    items.push({ k: 'info', t: 'max pods ' + mp.maxPods + ' comes from the prefix formula and the cap', d: 'IPv6 removes the address limit; (' + i.enis + ' x (' + i.ipsPerEni + ' - 1) x 16) + 2 = ' + fmtNum(mp.prefixFormula) + (mp.rule === 'cap' ? ', capped at ' + mp.cap + ' by the managed node group' : '') + '. Size nodes by CPU and memory.', src: 'eksIpv6Pods' });
+    items.push({ k: 'warn', t: 'creation-time choice, no custom networking, IPv6-only Services', d: 'The IP family is set when the cluster is created and cannot be changed. Custom networking is not supported. Pods reach IPv4-only endpoints through NAT on the node; Services get ULA IPv6 addresses.', src: 'eksIpv6' });
+    if (o.customNetworking) items.push({ k: 'bad', t: 'custom networking is not available with IPv6', d: 'Turn one of the two off. IPv6 is the replacement for custom networking as the exhaustion fix.', src: 'eksIpv6' });
+    return {
+      cloud: 'eks', ipv6: true, instance: i, maxPods: mp, podsPerNode: pods, perNode: per, azs, nodesPerAz, nodesPlanned,
+      perZone: { need, needWorst: need, prefix: sub.prefix, usable: sub.usable, prefixWorst: sub.prefix },
+      ipv6Plan: { vpc: 56, subnet: 64, node: 80, nodesPerSubnet: Math.pow(2, 16) },
+      totals: { nodes: nodesPlanned * azs, pods: nodesPlanned * azs * pods, addresses: pow2(32 - sub.prefix) * azs },
+      items, rules: ['eksIpv6', 'eksIpv6Pods', 'eksManagedCap', 'eksControlPlane', 'eksReserved'],
+    };
+  }
+  function fmtNum(n) { return Number(n).toLocaleString('en-US'); }
 
   // Custom networking: nodes stay in the node subnet (one address each), Pods move to a per-zone subnet carved from a secondary CIDR
   function eksPlanCustom(o, i, azs, nodesPerAz, nodesPlanned, cp, mp, pods, per) {

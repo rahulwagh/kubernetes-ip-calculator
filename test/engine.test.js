@@ -133,3 +133,27 @@ test('EKS custom networking warns when pod subnets outgrow one /16 secondary blo
   const r = E.eksPlan({ type: 'm6i.32xlarge', nodesPerAz: 100, azs: 3, customNetworking: true });
   assert.ok(r.items.some(i => i.k === 'warn' && /more than one \/16/.test(i.t)) || r.items.some(i => i.k === 'bad'));
 });
+
+// ---- EKS Windows (userguide: available addresses = IPs per interface - 1, x16 with prefixes; max-pods default 110)
+test('EKS Windows nodes use one ENI', () => {
+  const m = E.eksMaxPods('m5.large', { os: 'windows' });              // 10 IPs -> 9 Pods
+  assert.equal(m.eniFormula, 9); assert.equal(m.maxPods, 9); assert.equal(m.windows, true);
+  const p = E.eksMaxPods('m5.large', { os: 'windows', prefixDelegation: true });  // 9 x 16 = 144 -> kubelet default 110
+  assert.equal(p.prefixFormula, 144); assert.equal(p.maxPods, 110); assert.equal(p.rule, 'kubelet-default');
+  assert.equal(E.eksMaxPods('c5.large', { os: 'windows', prefixDelegation: true }).prefixFormula, 144); // c5.large example in the best-practices page: 9 slots
+  const per = E.eksPerNodeIps('m5.large', { os: 'windows', pods: 5 });   // primary + 5 + warm 1 = 7
+  assert.equal(per.ips, 7);
+  const r = E.eksPlan({ type: 'm5.large', nodesPerAz: 5, azs: 2, os: 'windows' });
+  assert.equal(r.windows, true); assert.ok(r.items.some(i => i.t.includes('one ENI')));
+});
+// ---- EKS IPv6 (best-practices: m5.large (3 x (10-1) x 16) + 2 = 434; one IPv4 per node)
+test('EKS IPv6 clusters: prefix formula, one IPv4 per node, /80 per node', () => {
+  const m = E.eksMaxPods('m5.large', { ipFamily: 'ipv6' });
+  assert.equal(m.prefixFormula, 434); assert.equal(m.maxPods, 110); assert.equal(m.ipv6, true);
+  const per = E.eksPerNodeIps('m5.large', { ipFamily: 'ipv6' });
+  assert.equal(per.ips, 1); assert.equal(per.ipv6PrefixPerNode, 80);
+  const r = E.eksPlan({ type: 'm5.2xlarge', nodesPerAz: 50, azs: 3, ipFamily: 'ipv6' });
+  assert.equal(r.perZone.need, 66); assert.equal(r.perZone.prefix, 25);        // 50 + 16 -> /25 (123 usable)
+  assert.equal(r.ipv6Plan.nodesPerSubnet, 65536);
+  assert.ok(E.eksPlan({ type: 'm5.large', nodesPerAz: 2, azs: 2, ipFamily: 'ipv6', customNetworking: true }).items.some(i => i.k === 'bad'));
+});
