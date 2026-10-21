@@ -301,6 +301,7 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
       <p>It does not model security groups for pods (branch ENIs), GKE multi-Pod CIDR, or AKS static block allocation. Those change the arithmetic; the per-cloud sources above describe each one. The numbers are planning maximums: real clusters also lose addresses to load balancers, endpoints and node replacements.</p>
 
       <h3 style="margin-top:18px;font-size:1rem">Frequently asked questions</h3>
+      <p class="hint">These are the short answers. The <a href="/tools/kubernetes-ip-calculator/faq/">full FAQ</a> answers the questions engineers actually ask on Stack Overflow, GitHub, Reddit and the cloud forums about pod IP exhaustion, max pods per node, prefix delegation, custom networking and subnet sizing on EKS, GKE and AKS, each with a screenshot of the tool solving it.</p>
       <div id="faq">
         <p><b>How many pods can run on an m5.large in EKS?</b><br>29 with the default VPC CNI: 3 ENIs × (10 IPs − 1) + 2. With prefix delegation the formula gives 434, and the managed node group cap of 110 applies.</p>
         <p><b>How many pods can an EKS node run with custom networking?</b><br>Fewer than without it: the primary ENI no longer serves pods, so max pods is (ENIs − 1) × (IPs per ENI − 1) + 2. An m5.large drops from 29 to 20 and an m5.2xlarge from 58 to 44; with prefix delegation on top the formula gives 290 for an m5.large and the managed node group cap of 110 applies.</p>
