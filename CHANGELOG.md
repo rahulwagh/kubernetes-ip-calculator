@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 - 2026-10-27
+
+- Page title, meta description, Open Graph title and heading now lead with "EKS, GKE and AKS IP Calculator", the words people search for (Search Console showed impressions for "eks calculator", "gke calculator" and "aks calculator" at positions 6 to 16 with the old title cut off before them). SoftwareApplication JSON-LD gains `alternateName`. No engine change.
+
 ## 1.2.0 - 2026-10-21
 
 - Windows node OS: single-ENI rule (`IPs per ENI - 1`, `x 16` with Windows prefix delegation, kubelet default 110) with the Windows IPAM warm pool (warm-ip-target 1, minimum-ip-target 3); the AWS userguide and best-practices examples (m5.large 9 / 144, c5.large 144) are test fixtures.

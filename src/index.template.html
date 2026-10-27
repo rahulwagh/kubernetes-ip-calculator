@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kubernetes IP Calculator - EKS, GKE and AKS subnet, pod and node IP sizing | jhooq.com</title>
-<meta name="description" content="Free Kubernetes IP address calculator for Amazon EKS, Google GKE and Azure AKS. Pick the instance type or pods per node, the node count and the zones; get max pods per node, the VPC addresses every node takes, the subnet size per zone and the pod and service ranges, from the rules each cloud publishes. Runs in your browser.">
+<title>EKS, GKE and AKS IP Calculator - pods per node and subnet size | jhooq.com</title>
+<meta name="description" content="Free EKS, GKE and AKS IP calculator: max pods per node, VPC IPs each node takes, subnet size per zone, pod and service ranges. Runs in your browser, no sign-up.">
 <link rel="canonical" href="https://jhooq.com/tools/kubernetes-ip-calculator/">
-<meta property="og:title" content="Kubernetes IP Calculator - jhooq.com">
+<meta property="og:title" content="EKS, GKE and AKS IP Calculator - jhooq.com">
 <meta property="og:description" content="How many IP addresses does your EKS, GKE or AKS cluster really need? Max pods per node, addresses per node, subnet per zone, pod and service ranges. Free, runs in the browser.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jhooq.com/tools/kubernetes-ip-calculator/">
@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Kubernetes IP Calculator","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://jhooq.com/tools/kubernetes-ip-calculator/","author":{"@type":"Person","name":"Rahul Wagh","url":"https://jhooq.com/about/"},"description":"Calculates max pods per node, VPC addresses per node, subnet size per zone and pod and service ranges for Amazon EKS, Google GKE and Azure AKS."}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Kubernetes IP Calculator","alternateName":["EKS IP Calculator","GKE IP Calculator","AKS IP Calculator","EKS, GKE and AKS IP Calculator"],"applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://jhooq.com/tools/kubernetes-ip-calculator/","author":{"@type":"Person","name":"Rahul Wagh","url":"https://jhooq.com/about/"},"description":"Calculates max pods per node, VPC addresses per node, subnet size per zone and pod and service ranges for Amazon EKS, Google GKE and Azure AKS."}
 </script>
 <style>
 :root{
@@ -149,7 +149,7 @@ pre.code{margin:0;background:var(--code);color:var(--code-ink);padding:16px 18px
   </header>
 
   <section class="hero">
-    <h1>Kubernetes IP Calculator</h1>
+    <h1>Kubernetes IP Calculator for EKS, GKE and AKS</h1>
     <p>How many IP addresses does your EKS, GKE or AKS cluster really need? Pick the cloud, the instance type or the pods per node, the node count and the zones. You get the maximum pods per node, the VPC addresses every node takes, the subnet size per zone and the pod and service ranges, computed from the rules each provider publishes and linked to them. Nothing leaves your browser.</p>
     <div class="badges">
       <span class="badge">EKS ENI, prefix delegation, custom networking, Windows and IPv6 maths</span><span class="badge">GKE node Pod ranges</span><span class="badge">AKS Overlay, Pod Subnet, legacy CNI</span><span class="badge">__EKS_DATA_COUNT__ EC2 instance types</span><span class="badge">Opens in the VPC Subnet Planner</span><span class="badge">Terraform and CLI snippets</span><span class="badge">No upload, no sign-up</span>
