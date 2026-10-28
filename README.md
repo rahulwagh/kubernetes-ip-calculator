@@ -7,6 +7,7 @@ How many IP addresses does your EKS, GKE or AKS cluster really need? Pick the cl
 - the maximum pods per node and which rule set it (ENI formula, prefix delegation, managed node group cap),
 - the VPC addresses every node takes, including the warm pool the CNI keeps,
 - the subnet size per zone (EKS), the node Pod range and Pod secondary range (GKE), the node subnet and pod space (AKS),
+- a diagram of the cluster (VPC, zones, subnets, one tile per node with a square per address) drawn from the same numbers,
 - a checks list with a link to the documentation page each rule came from,
 - one click to open the result in the [VPC Subnet Planner](https://jhooq.com/tools/vpc-subnet-planner/), and Terraform, CLI and Markdown exports.
 

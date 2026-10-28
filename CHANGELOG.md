@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 - 2026-10-28
+
+- Guided layout: the inputs are five numbered steps (cloud, common case, instance type or mode, nodes and zones, pods per node) with the current step highlighted and a "Next" link under each; everything else (custom networking, OS, IP family, managed node group, growth headroom, service CIDR check) sits under "More options".
+- The result opens with one headline number (subnet per zone on EKS, Pod secondary range on GKE, node or pod subnet on AKS) and a one-sentence plan, then the KPI tiles.
+- New "How the cluster looks" diagram, drawn as SVG from the engine result: VPC, zones, subnets, one tile per node with a square per address (ENI primary, pod, warm, free slot) or a bar per /28 prefix; node and pod subnets for custom networking; the /80 IPv6 prefix on IPv6 clusters; GKE primary and Pod ranges with a block per node; AKS node subnet plus pod subnet, pod CIDR outside the VNet, or pre-assigned pod addresses on legacy CNI; service CIDR shown outside the VPC. Nodes beyond the drawn ones are summarised as "+N".
+- Answer panel is sticky on desktop; on phones a bottom bar shows the headline and jumps to the result. Ranges, checks and exports moved below the fold; the arithmetic is folded under "Show the arithmetic".
+- No engine change; share links from 1.2.x still load.
+
 ## 1.2.1 - 2026-10-27
 
 - Page title, meta description, Open Graph title and heading now lead with "EKS, GKE and AKS IP Calculator", the words people search for (Search Console showed impressions for "eks calculator", "gke calculator" and "aks calculator" at positions 6 to 16 with the old title cut off before them). SoftwareApplication JSON-LD gains `alternateName`. No engine change.
