@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1 - 2026-10-28
+
+- VPC CIDR is an input (step 4, EKS). The diagram label, the Terraform `vpc_cidr` and `cidrsubnet` newbits, the eksctl `vpc.cidr`, the service CIDR overlap check and the VPC Subnet Planner hand-off use it instead of a hard-coded 10.0.0.0/16, and a check reports whether the zone subnets fit (blocking when they do not, a warning above 75%). Share link key `vp`. Subnet sizing itself never depended on the VPC size.
+- The chosen common case stays highlighted while steps 3 to 5 still match it and clears when a value moves away from it; the quick instance-type chips show the current type the same way.
+- AWS, Google Cloud and Azure marks on the cloud cards (devicon, MIT), with a trademark note in the footer.
+
 ## 1.3.0 - 2026-10-28
 
 - Guided layout: the inputs are five numbered steps (cloud, common case, instance type or mode, nodes and zones, pods per node) with the current step highlighted and a "Next" link under each; everything else (custom networking, OS, IP family, managed node group, growth headroom, service CIDR check) sits under "More options".

@@ -86,11 +86,14 @@ input.bad{border-color:var(--red)}
 .clouds button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);cursor:pointer;transition:.15s}
 .clouds button:hover{border-color:var(--blue)}
 .clouds button.on{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%,var(--paper));box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 18%,transparent)}
+.clouds .logo{height:24px;width:auto;max-width:96px;display:block;margin-bottom:6px;color:var(--ink)}
 .clouds b{color:var(--ink);font-size:.92rem}
 .clouds small{color:var(--muted);font-size:.72rem;line-height:1.3}
 .presets{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px dashed var(--line);background:transparent;padding:5px 9px;border-radius:999px;font-size:.78rem;cursor:pointer;color:var(--muted)}
 .chip:hover,.chip.on{border-color:var(--blue);color:var(--blue)}
+.chip.on{border-style:solid;background:color-mix(in srgb,var(--blue) 12%,transparent);font-weight:600}
+.chip.on::before{content:"✓ "}
 .switch{display:flex;align-items:center;gap:10px;font-size:.86rem;cursor:pointer;user-select:none}
 .switch input{appearance:none;width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:.2s;margin:0;flex-shrink:0}
 .switch input:checked{background:var(--blue)}
@@ -224,9 +227,9 @@ details.fold>summary:hover{color:var(--blue)}
         <div class="hd"><span class="num">1</span><h2>Which cloud?</h2><span class="cue">start here</span></div>
         <div class="bd stack">
           <div class="clouds" id="cloudSeg">
-            <button data-v="eks"><b>Amazon EKS</b><small>VPC CNI: pods take VPC addresses</small></button>
-            <button data-v="gke"><b>Google GKE</b><small>VPC-native: alias range per node</small></button>
-            <button data-v="aks"><b>Azure AKS</b><small>Overlay, Pod Subnet or legacy CNI</small></button>
+            <button data-v="eks"><svg class="logo" viewBox="0 0 128 128" aria-hidden="true" focusable="false"><path fill="currentColor" d="M36.379 53.64c0 1.56.168 2.825.465 3.75.336.926.758 1.938 1.347 3.032.207.336.293.672.293.969 0 .418-.254.84-.8 1.261l-2.653 1.77c-.379.25-.758.379-1.093.379-.422 0-.844-.211-1.266-.59a13.28 13.28 0 0 1-1.516-1.98 34.153 34.153 0 0 1-1.304-2.485c-3.282 3.875-7.41 5.813-12.38 5.813-3.535 0-6.355-1.012-8.421-3.032-2.063-2.023-3.114-4.718-3.114-8.086 0-3.578 1.262-6.484 3.833-8.671 2.566-2.192 5.976-3.286 10.316-3.286 1.43 0 2.902.125 4.46.336 1.56.211 3.161.547 4.845.926v-3.074c0-3.2-.676-5.43-1.98-6.734C26.061 32.633 23.788 32 20.546 32c-1.473 0-2.988.168-4.547.547a33.416 33.416 0 0 0-4.547 1.433c-.676.293-1.18.461-1.473.547-.296.082-.507.125-.675.125-.59 0-.883-.422-.883-1.304v-2.063c0-.676.082-1.18.293-1.476.21-.293.59-.586 1.18-.883 1.472-.758 3.242-1.39 5.304-1.895 2.063-.547 4.254-.8 6.57-.8 5.008 0 8.672 1.136 11.032 3.41 2.316 2.273 3.492 5.726 3.492 10.359v13.64Zm-17.094 6.403c1.387 0 2.82-.254 4.336-.758 1.516-.508 2.863-1.433 4-2.695.672-.8 1.18-1.684 1.43-2.695.254-1.012.422-2.23.422-3.665v-1.765a34.401 34.401 0 0 0-3.871-.719 31.816 31.816 0 0 0-3.961-.25c-2.82 0-4.883.547-6.274 1.684-1.387 1.136-2.062 2.734-2.062 4.84 0 1.98.504 3.453 1.558 4.464 1.012 1.051 2.485 1.559 4.422 1.559Zm33.809 4.547c-.758 0-1.262-.125-1.598-.422-.34-.254-.633-.84-.887-1.64L40.715 29.98c-.25-.843-.38-1.39-.38-1.687 0-.672.337-1.05 1.013-1.05h4.125c.8 0 1.347.124 1.644.421.336.25.59.84.84 1.64l7.074 27.876 6.57-27.875c.208-.84.462-1.39.797-1.64.34-.255.93-.423 1.688-.423h3.367c.8 0 1.348.125 1.684.422.336.25.633.84.8 1.64l6.653 28.212 7.285-28.211c.25-.84.547-1.39.84-1.64.336-.255.887-.423 1.644-.423h3.914c.676 0 1.055.336 1.055 1.051 0 .21-.043.422-.086.676-.043.254-.125.59-.293 1.05L80.801 62.57c-.254.84-.547 1.387-.887 1.64-.336.255-.883.423-1.598.423h-3.62c-.801 0-1.348-.13-1.684-.422-.34-.297-.633-.844-.801-1.684l-6.527-27.16-6.485 27.117c-.21.844-.46 1.391-.8 1.684-.337.297-.926.422-1.684.422Zm54.105 1.137c-2.187 0-4.379-.254-6.484-.758-2.106-.504-3.746-1.055-4.84-1.684-.676-.379-1.137-.8-1.305-1.18a2.919 2.919 0 0 1-.254-1.18v-2.148c0-.882.336-1.304.97-1.304.25 0 .503.043.757.129.25.082.629.25 1.05.418a23.102 23.102 0 0 0 4.634 1.476c1.683.336 3.324.504 5.011.504 2.653 0 4.715-.465 6.145-1.39 1.433-.926 2.191-2.274 2.191-4 0-1.18-.379-2.145-1.136-2.946-.758-.8-2.192-1.516-4.254-2.191l-6.106-1.895c-3.074-.969-5.348-2.398-6.734-4.293-1.39-1.855-2.106-3.918-2.106-6.105 0-1.77.38-3.328 1.137-4.676a10.829 10.829 0 0 1 3.031-3.453c1.262-.965 2.696-1.684 4.38-2.188 1.683-.504 3.452-.715 5.304-.715.926 0 1.894.043 2.82.168.969.125 1.852.293 2.738.461.84.211 1.641.422 2.399.676.758.254 1.348.504 1.77.758.59.336 1.011.672 1.261 1.05.254.34.379.802.379 1.391v1.98c0 .884-.336 1.348-.969 1.348-.336 0-.883-.171-1.597-.507-2.403-1.094-5.098-1.641-8.086-1.641-2.399 0-4.293.379-5.598 1.18-1.309.797-1.98 2.02-1.98 3.746 0 1.18.421 2.191 1.261 2.988.844.8 2.403 1.602 4.633 2.316l5.98 1.895c3.032.969 5.22 2.316 6.524 4.043 1.305 1.727 1.938 3.707 1.938 5.895 0 1.812-.38 3.453-1.094 4.882-.758 1.434-1.77 2.696-3.074 3.707-1.305 1.051-2.864 1.809-4.672 2.36-1.895.586-3.875.883-6.024.883Zm0 0"/> <path fill="#f90" d="M118 73.348c-4.432.063-9.664 1.052-13.621 3.832-1.223.883-1.012 2.062.336 1.894 4.508-.547 14.44-1.726 16.21.547 1.77 2.23-1.976 11.62-3.663 15.79-.504 1.26.59 1.769 1.726.8 7.41-6.231 9.348-19.242 7.832-21.137-.757-.925-4.388-1.79-8.82-1.726zM1.63 75.859c-.927.116-1.347 1.236-.368 2.121 16.508 14.902 38.359 23.872 62.613 23.872 17.305 0 37.43-5.43 51.281-15.66 2.273-1.688.297-4.254-2.02-3.204-15.534 6.57-32.421 9.77-47.788 9.77-22.778 0-44.8-6.273-62.653-16.633-.39-.231-.755-.304-1.064-.266z"/></svg><b>Amazon EKS</b><small>VPC CNI: pods take VPC addresses</small></button>
+            <button data-v="gke"><svg class="logo" viewBox="0 0 128 128" aria-hidden="true" focusable="false"><path fill="#ea4535" d="M80.6 40.3h.4l-.2-.2 14-14v-.3c-11.8-10.4-28.1-14-43.2-9.5C36.5 20.8 24.9 32.8 20.7 48c.2-.1.5-.2.8-.2 5.2-3.4 11.4-5.4 17.9-5.4 2.2 0 4.3.2 6.4.6.1-.1.2-.1.3-.1 9-9.9 24.2-11.1 34.6-2.6h-.1z"/><path fill="#557ebf" d="M108.1 47.8c-2.3-8.5-7.1-16.2-13.8-22.1L80 39.9c6 4.9 9.5 12.3 9.3 20v2.5c16.9 0 16.9 25.2 0 25.2H63.9v20h-.1l.1.2h25.4c14.6.1 27.5-9.3 31.8-23.1 4.3-13.8-1-28.8-13-36.9z"/><path fill="#36a852" d="M39 107.9h26.3V87.7H39c-1.9 0-3.7-.4-5.4-1.1l-15.2 14.6v.2c6 4.3 13.2 6.6 20.7 6.6z"/><path fill="#f9bc15" d="M40.2 41.9c-14.9.1-28.1 9.3-32.9 22.8-4.8 13.6 0 28.5 11.8 37.3l15.6-14.9c-8.6-3.7-10.6-14.5-4-20.8 6.6-6.4 17.8-4.4 21.7 3.8L68 55.2C61.4 46.9 51.1 42 40.2 42.1z"/></svg><b>Google GKE</b><small>VPC-native: alias range per node</small></button>
+            <button data-v="aks"><svg class="logo" viewBox="0 0 128 128" aria-hidden="true" focusable="false"><defs><linearGradient id="azure-original-a" x1="60.919" y1="9.602" x2="18.667" y2="134.423" gradientUnits="userSpaceOnUse"><stop stop-color="#114A8B"/><stop offset="1" stop-color="#0669BC"/></linearGradient><linearGradient id="azure-original-b" x1="74.117" y1="67.772" x2="64.344" y2="71.076" gradientUnits="userSpaceOnUse"><stop stop-opacity=".3"/><stop offset=".071" stop-opacity=".2"/><stop offset=".321" stop-opacity=".1"/><stop offset=".623" stop-opacity=".05"/><stop offset="1" stop-opacity="0"/></linearGradient><linearGradient id="azure-original-c" x1="68.742" y1="5.961" x2="115.122" y2="129.525" gradientUnits="userSpaceOnUse"><stop stop-color="#3CCBF4"/><stop offset="1" stop-color="#2892DF"/></linearGradient></defs><path d="M46.09.002h40.685L44.541 125.137a6.485 6.485 0 01-6.146 4.413H6.733a6.482 6.482 0 01-5.262-2.699 6.474 6.474 0 01-.876-5.848L39.944 4.414A6.488 6.488 0 0146.09 0z" fill="url(#azure-original-a)" transform="translate(.587 4.468) scale(.91904)"/><path d="M97.28 81.607H37.987a2.743 2.743 0 00-1.874 4.751l38.1 35.562a5.991 5.991 0 004.087 1.61h33.574z" fill="#0078d4"/><path d="M46.09.002A6.434 6.434 0 0039.93 4.5L.644 120.897a6.469 6.469 0 006.106 8.653h32.48a6.942 6.942 0 005.328-4.531l7.834-23.089 27.985 26.101a6.618 6.618 0 004.165 1.519h36.396l-15.963-45.616-46.533.011L86.922.002z" fill="url(#azure-original-b)" transform="translate(.587 4.468) scale(.91904)"/><path d="M98.055 4.408A6.476 6.476 0 0091.917.002H46.575a6.478 6.478 0 016.137 4.406l39.35 116.594a6.476 6.476 0 01-6.137 8.55h45.344a6.48 6.48 0 006.136-8.55z" fill="url(#azure-original-c)" transform="translate(.587 4.468) scale(.91904)"/></svg><b>Azure AKS</b><small>Overlay, Pod Subnet or legacy CNI</small></button>
           </div>
           <a class="next" href="#step2">Next: start from a common case ↓</a>
         </div>
@@ -278,6 +281,7 @@ details.fold>summary:hover{color:var(--blue)}
           <div class="two" data-only="aks">
             <div class="field"><label for="nodesAks">Nodes (whole cluster)</label><input type="number" id="nodesAks" min="1" max="5000" value="20"></div>
           </div>
+          <div class="field" data-only="eks"><label for="vpcMain">VPC CIDR</label><input type="text" id="vpcMain" value="10.0.0.0/16" class="mono" spellcheck="false"><span class="hint">The zone subnets are carved from this block, /16 to /28. The checks say when they do not fit.</span></div>
           <div class="two">
             <div class="field" data-only="gke aks" style="display:flex"><label for="surge">Surge nodes during upgrade</label><input type="number" id="surge" min="0" max="500" value="1"><span class="hint">AKS default max surge is 1 node; GKE default is 1.</span></div>
           </div>
@@ -319,7 +323,7 @@ details.fold>summary:hover{color:var(--blue)}
               <div class="field"><label for="growth">Growth headroom</label><div class="row"><input type="number" id="growth" min="0" max="400" value="0" style="width:110px"><span>%</span></div><span class="hint">Added to the node count before sizing.</span></div>
             </div>
             <div class="field" data-only="eks"><label for="svcCidr">Kubernetes service CIDR</label><input type="text" id="svcCidr" value="172.20.0.0/16" class="mono" spellcheck="false"><span class="hint">EKS default is 10.100.0.0/16 or 172.20.0.0/16. Must be /12 to /24 inside a private range and must not overlap the VPC.</span></div>
-            <div class="field" data-only="eks"><label for="vpcCidrs">VPC CIDRs (one per line)</label><textarea id="vpcCidrs" rows="2" class="mono" spellcheck="false">10.0.0.0/16</textarea></div>
+            <div class="field" data-only="eks"><label for="vpcCidrs">Other VPC CIDR blocks (one per line)</label><textarea id="vpcCidrs" rows="2" class="mono" spellcheck="false" placeholder="10.1.0.0/16"></textarea><span class="hint">Secondary blocks or peered VPCs, for the service CIDR overlap check.</span></div>
             <div id="svcOut" data-only="eks" style="flex-direction:column"></div>
           </div>
         </details>
@@ -437,7 +441,7 @@ details.fold>summary:hover{color:var(--blue)}
     <a href="https://jhooq.com/what-is-cidr-classless-inter-domain-routing/">What is CIDR?</a>
     <a href="https://jhooq.com/kubernetes-index/">Kubernetes tutorials</a>
     <a href="https://www.youtube.com/@RahulWagh">YouTube</a>
-    <div style="margin-top:10px">Built by <a href="https://jhooq.com/about/">Rahul Wagh</a>. Rules follow the current EKS, GKE and AKS documentation linked above; the EKS instance table is regenerated from the EKS AMI repository. Your inputs stay in this tab; the share link encodes them in the URL. Source on <a href="https://github.com/rahulwagh/kubernetes-ip-calculator">GitHub</a>.</div>
+    <div style="margin-top:10px">Built by <a href="https://jhooq.com/about/">Rahul Wagh</a>. Rules follow the current EKS, GKE and AKS documentation linked above; the EKS instance table is regenerated from the EKS AMI repository. Your inputs stay in this tab; the share link encodes them in the URL. Source on <a href="https://github.com/rahulwagh/kubernetes-ip-calculator">GitHub</a>. AWS, Google Cloud and Microsoft Azure are trademarks of their owners; the logos only say which cloud's rules apply.</div>
   </footer>
 </div>
 <div class="toast" id="toast"></div>
@@ -820,7 +824,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 // ------------------------------------------------------------ state
 const S = window.S = {
   cloud: 'eks', tab: 'tf',
-  eks: { type: 'm5.large', nodesAz: 5, azs: 3, pods: '', prefix: false, custom: false, os: 'linux', fam: 'ipv4', managed: true, cp: 16, svc: '172.20.0.0/16', vpcs: '10.0.0.0/16' },
+  eks: { type: 'm5.large', nodesAz: 5, azs: 3, pods: '', prefix: false, custom: false, os: 'linux', fam: 'ipv4', managed: true, cp: 16, svc: '172.20.0.0/16', vpc: '10.0.0.0/16', vpcs: '' },
   gke: { autopilot: false, nodes: 30, pods: 110, svcManaged: true, svcPrefix: 20 },
   aks: { mode: 'overlay', nodes: 20, pods: '' },
   surge: 1, growth: 0,
@@ -854,7 +858,7 @@ const QUICK = ['t3.medium', 'm5.large', 'm5.xlarge', 'm5.2xlarge', 'm7g.large', 
 function saveHash() {
   try {
     const o = { c: S.cloud, g: S.growth, s: S.surge };
-    if (S.cloud === 'eks') Object.assign(o, { i: S.eks.type, n: S.eks.nodesAz, z: S.eks.azs, q: S.eks.pods, x: S.eks.prefix ? 1 : 0, cn: S.eks.custom ? 1 : 0, os: S.eks.os === 'windows' ? 'w' : 'l', v6: S.eks.fam === 'ipv6' ? 1 : 0, m: S.eks.managed ? 1 : 0, p: S.eks.cp, sc: S.eks.svc, vc: S.eks.vpcs });
+    if (S.cloud === 'eks') Object.assign(o, { i: S.eks.type, n: S.eks.nodesAz, z: S.eks.azs, q: S.eks.pods, x: S.eks.prefix ? 1 : 0, cn: S.eks.custom ? 1 : 0, os: S.eks.os === 'windows' ? 'w' : 'l', v6: S.eks.fam === 'ipv6' ? 1 : 0, m: S.eks.managed ? 1 : 0, p: S.eks.cp, sc: S.eks.svc, vp: S.eks.vpc, vc: S.eks.vpcs });
     if (S.cloud === 'gke') Object.assign(o, { a: S.gke.autopilot ? 1 : 0, n: S.gke.nodes, q: S.gke.pods, sm: S.gke.svcManaged ? 1 : 0, sp: S.gke.svcPrefix });
     if (S.cloud === 'aks') Object.assign(o, { k: S.aks.mode, n: S.aks.nodes, q: S.aks.pods });
     history.replaceState(null, '', '#' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, ''));
@@ -866,29 +870,40 @@ function loadHash() {
   if (!o || typeof o !== 'object') return false;
   S.cloud = ['eks', 'gke', 'aks'].includes(o.c) ? o.c : 'eks';
   S.growth = +o.g || 0; S.surge = o.s == null ? 1 : +o.s;
-  if (S.cloud === 'eks') { if (o.i && E.eksInstance(o.i)) S.eks.type = o.i; S.eks.nodesAz = +o.n || 5; S.eks.azs = +o.z || 3; S.eks.pods = o.q === '' || o.q == null ? '' : +o.q; S.eks.prefix = !!o.x; S.eks.custom = !!o.cn; S.eks.os = o.os === 'w' ? 'windows' : 'linux'; S.eks.fam = o.v6 ? 'ipv6' : 'ipv4'; S.eks.managed = o.m !== 0; S.eks.cp = +o.p === 6 ? 6 : 16; if (o.sc) S.eks.svc = String(o.sc); if (o.vc != null) S.eks.vpcs = String(o.vc); }
+  if (S.cloud === 'eks') { if (o.i && E.eksInstance(o.i)) S.eks.type = o.i; S.eks.nodesAz = +o.n || 5; S.eks.azs = +o.z || 3; S.eks.pods = o.q === '' || o.q == null ? '' : +o.q; S.eks.prefix = !!o.x; S.eks.custom = !!o.cn; S.eks.os = o.os === 'w' ? 'windows' : 'linux'; S.eks.fam = o.v6 ? 'ipv6' : 'ipv4'; S.eks.managed = o.m !== 0; S.eks.cp = +o.p === 6 ? 6 : 16; if (o.sc) S.eks.svc = String(o.sc); if (o.vp) S.eks.vpc = String(o.vp); if (o.vc != null) S.eks.vpcs = String(o.vc); }
   if (S.cloud === 'gke') { S.gke.autopilot = !!o.a; S.gke.nodes = +o.n || 30; S.gke.pods = +o.q || 110; S.gke.svcManaged = o.sm !== 0; S.gke.svcPrefix = +o.sp || 20; }
   if (S.cloud === 'aks') { S.aks.mode = E.AKS_MODES[o.k] ? o.k : 'overlay'; S.aks.nodes = +o.n || 20; S.aks.pods = o.q === '' || o.q == null ? '' : +o.q; }
   return true;
 }
 
 // ------------------------------------------------------------ inputs <-> state
+// The preset whose values steps 3 to 5 currently hold, or -1: the chip stays selected until a value moves away from it.
+function activePreset() {
+  const st = S[S.cloud];
+  return PRESETS[S.cloud].findIndex(p => {
+    if (!Object.keys(p.s).every(k => String(st[k]) === String(p.s[k]))) return false;
+    if (S.cloud !== 'eks') return true;
+    const d = { custom: false, os: 'linux', fam: 'ipv4' };
+    return Object.keys(d).every(k => k in p.s || String(st[k]) === String(d[k]));
+  });
+}
 function pushInputs() {
   document.body.dataset.cloud = S.cloud;
   [...$('cloudSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.cloud));
   $('inst').value = S.eks.type; $('nodesAz').value = S.eks.nodesAz; [...$('azSeg').children].forEach(b => b.classList.toggle('on', +b.dataset.v === S.eks.azs));
-  $('podsEks').value = S.eks.pods; $('cpIps').value = String(S.eks.cp); $('prefixSw').checked = S.eks.prefix; $('customSw').checked = S.eks.custom; [...$('osSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.eks.os)); [...$('famSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.eks.fam)); $('prefixSw').disabled = S.eks.fam === 'ipv6'; if (S.eks.fam === 'ipv6') { $('prefixSw').checked = true; S.eks.prefix = true; } $('customSw').disabled = S.eks.os === 'windows' || S.eks.fam === 'ipv6'; $('managedSw').checked = S.eks.managed; $('svcCidr').value = S.eks.svc; $('vpcCidrs').value = S.eks.vpcs;
+  $('podsEks').value = S.eks.pods; $('cpIps').value = String(S.eks.cp); $('prefixSw').checked = S.eks.prefix; $('customSw').checked = S.eks.custom; [...$('osSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.eks.os)); [...$('famSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.eks.fam)); $('prefixSw').disabled = S.eks.fam === 'ipv6'; if (S.eks.fam === 'ipv6') { $('prefixSw').checked = true; S.eks.prefix = true; } $('customSw').disabled = S.eks.os === 'windows' || S.eks.fam === 'ipv6'; $('managedSw').checked = S.eks.managed; $('svcCidr').value = S.eks.svc; $('vpcMain').value = S.eks.vpc; $('vpcCidrs').value = S.eks.vpcs; { const c = E.parseCidr(S.eks.vpc); $('vpcMain').classList.toggle('bad', !c || c.prefix > 28 || c.prefix < 8); }
   [...$('gkeMode').children].forEach(b => b.classList.toggle('on', (b.dataset.v === 'autopilot') === S.gke.autopilot));
   $('nodesGke').value = S.gke.nodes; $('podsGke').value = S.gke.pods; $('podsGke').disabled = S.gke.autopilot; $('svcManaged').checked = S.gke.svcManaged; $('svcPrefix').value = String(S.gke.svcPrefix); $('svcPrefixField').style.display = (S.cloud === 'gke' && !S.gke.svcManaged) ? 'flex' : 'none';
   $('aksMode').value = S.aks.mode; $('nodesAks').value = S.aks.nodes; $('podsAks').value = S.aks.pods; $('aksPodsHint').textContent = 'Blank = plugin default (' + E.AKS_MODES[S.aks.mode].defaultMaxPods + '); range 10 to 250';
   $('surge').value = S.surge; $('growth').value = S.growth;
   stepLabels();
   const pr = $('presets'); pr.innerHTML = PRESETS[S.cloud].map((p, i) => '<button class="chip" data-preset="' + S.cloud + '-' + i + '">' + esc(p.l) + '</button>').join('');
-  pr.querySelectorAll('button').forEach((b, i) => b.onclick = () => { Object.assign(S[S.cloud], S.cloud === 'eks' ? { custom: false, os: 'linux', fam: 'ipv4' } : {}, PRESETS[S.cloud][i].s); pushInputs(); update(); });
+  const ap = activePreset(); pr.querySelectorAll('button').forEach((b, i) => { b.classList.toggle('on', i === ap); b.onclick = () => { Object.assign(S[S.cloud], S.cloud === 'eks' ? { custom: false, os: 'linux', fam: 'ipv4' } : {}, PRESETS[S.cloud][i].s); pushInputs(); update(); }; });
+  if (S.cloud === 'eks') [...$('instQuick').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.eks.type));
 }
 function pullInputs() {
   const n = (id, d) => { const v = $(id).value.trim(); return v === '' ? d : Math.max(0, +v); };
-  S.eks.type = $('inst').value.trim().toLowerCase(); S.eks.nodesAz = n('nodesAz', 1) || 1; S.eks.pods = $('podsEks').value.trim() === '' ? '' : Math.max(1, +$('podsEks').value); S.eks.cp = +$('cpIps').value; S.eks.prefix = $('prefixSw').checked; S.eks.custom = $('customSw').checked; S.eks.managed = $('managedSw').checked; S.eks.svc = $('svcCidr').value.trim(); S.eks.vpcs = $('vpcCidrs').value;
+  S.eks.type = $('inst').value.trim().toLowerCase(); S.eks.nodesAz = n('nodesAz', 1) || 1; S.eks.pods = $('podsEks').value.trim() === '' ? '' : Math.max(1, +$('podsEks').value); S.eks.cp = +$('cpIps').value; S.eks.prefix = $('prefixSw').checked; S.eks.custom = $('customSw').checked; S.eks.managed = $('managedSw').checked; S.eks.svc = $('svcCidr').value.trim(); S.eks.vpc = $('vpcMain').value.trim(); S.eks.vpcs = $('vpcCidrs').value;
   S.gke.nodes = n('nodesGke', 1) || 1; S.gke.pods = n('podsGke', 110) || 110; S.gke.svcManaged = $('svcManaged').checked; S.gke.svcPrefix = +$('svcPrefix').value;
   S.aks.mode = $('aksMode').value; S.aks.nodes = n('nodesAks', 1) || 1; S.aks.pods = $('podsAks').value.trim() === '' ? '' : +$('podsAks').value;
   S.surge = n('surge', 1); S.growth = n('growth', 0);
@@ -896,6 +911,10 @@ function pullInputs() {
 
 // ------------------------------------------------------------ compute + render
 let R = null;
+// The VPC the zone subnets are carved from: what the user typed, else 10.0.0.0/16. Only the exports, the diagram label and the fit check use it; subnet sizing does not depend on it.
+function vpcCidr() { const c = E.parseCidr(S.eks.vpc); return c && c.prefix >= 8 && c.prefix <= 28 ? c : E.parseCidr('10.0.0.0/16'); }
+function vpcNeed(r) { return r.azs * Math.pow(2, 32 - r.perZone.prefix); }
+function vpcFits(r) { return vpcNeed(r) <= vpcCidr().size; }
 function compute() {
   if (S.cloud === 'eks') return E.eksPlan({ type: S.eks.type, nodesPerAz: S.eks.nodesAz, azs: S.eks.azs, podsPerNode: S.eks.pods, prefixDelegation: S.eks.prefix, customNetworking: S.eks.custom && S.eks.os !== 'windows' && S.eks.fam !== 'ipv6', os: S.eks.os, ipFamily: S.eks.fam, managed: S.eks.managed, growthPct: S.growth, controlPlaneIps: S.eks.cp });
   if (S.cloud === 'gke') return E.gkePlan({ autopilot: S.gke.autopilot, nodes: S.gke.nodes, podsPerNode: S.gke.pods, surge: S.surge, growthPct: S.growth, servicesManaged: S.gke.svcManaged, servicesPrefix: S.gke.svcPrefix });
@@ -1012,11 +1031,11 @@ function tfEksIpv6() {
   const r = R, i = r.instance;
   const azs = JSON.stringify(Array.from({ length: r.azs }, (_, k) => '${data.aws_region.current.region}' + String.fromCharCode(97 + k)));
   return hdr('#') + '# EKS IPv6 cluster: ' + fmt(r.nodesPlanned) + ' x ' + i.type + ' per zone, ' + r.podsPerNode + ' pods per node; IPv4 subnet per zone /' + r.perZone.prefix + ' (nodes + control plane only)\n\n' +
-'locals {\n  vpc_cidr         = "10.0.0.0/16"\n  azs              = ' + azs + '\n  node_subnet_bits = ' + (r.perZone.prefix - 16) + '  # /16 VPC -> /' + r.perZone.prefix + ' IPv4 subnets; Pods need none of it\n}\n\ndata "aws_region" "current" {}\n\nresource "aws_vpc" "this" {\n  cidr_block                       = local.vpc_cidr\n  assign_generated_ipv6_cidr_block = true   # Amazon-provided /56\n  enable_dns_support               = true\n  enable_dns_hostnames             = true\n}\n\nresource "aws_subnet" "nodes" {\n  for_each                        = { for k, az in local.azs : az => k }\n  vpc_id                          = aws_vpc.this.id\n  availability_zone               = each.key\n  cidr_block                      = cidrsubnet(local.vpc_cidr, local.node_subnet_bits, each.value)\n  ipv6_cidr_block                 = cidrsubnet(aws_vpc.this.ipv6_cidr_block, 8, each.value)   # one /64 per zone from the /56\n  assign_ipv6_address_on_creation = true\n  tags = {\n    Name                              = "eks-nodes-${each.key}"\n    "kubernetes.io/role/internal-elb" = "1"\n  }\n}\n\nresource "aws_eks_cluster" "this" {\n  name     = "demo"\n  role_arn = aws_iam_role.cluster.arn\n  vpc_config {\n    subnet_ids = [for s in aws_subnet.nodes : s.id]\n  }\n  kubernetes_network_config {\n    ip_family = "ipv6"   # creation-time choice; Services get a ULA range automatically\n  }\n}\n\n# The vpc-cni add-on defaults to prefix delegation on an IPv6 cluster (ENABLE_IPv6=true, ENABLE_PREFIX_DELEGATION=true).\nresource "aws_eks_node_group" "default" {\n  cluster_name    = aws_eks_cluster.this.name\n  node_group_name = "default"\n  node_role_arn   = aws_iam_role.node.arn\n  subnet_ids      = [for s in aws_subnet.nodes : s.id]\n  instance_types  = ["' + i.type + '"]   # Nitro required\n  scaling_config {\n    desired_size = ' + (r.nodesPerAz * r.azs) + '\n    min_size     = ' + (r.nodesPerAz * r.azs) + '\n    max_size     = ' + (r.nodesPlanned * r.azs) + '\n  }\n}\n# Expect ' + r.maxPods.maxPods + ' allocatable pods per node; the node role also needs the IPv6 CNI policy (AssignIpv6Addresses, ec2:DescribeNetworkInterfaces...).\n';
+'locals {\n  vpc_cidr         = "' + vpcCidr().cidr + '"\n  azs              = ' + azs + '\n  node_subnet_bits = ' + Math.max(0, r.perZone.prefix - vpcCidr().prefix) + '  # /' + vpcCidr().prefix + ' VPC -> /' + r.perZone.prefix + ' IPv4 subnets; Pods need none of it\n}\n\ndata "aws_region" "current" {}\n\nresource "aws_vpc" "this" {\n  cidr_block                       = local.vpc_cidr\n  assign_generated_ipv6_cidr_block = true   # Amazon-provided /56\n  enable_dns_support               = true\n  enable_dns_hostnames             = true\n}\n\nresource "aws_subnet" "nodes" {\n  for_each                        = { for k, az in local.azs : az => k }\n  vpc_id                          = aws_vpc.this.id\n  availability_zone               = each.key\n  cidr_block                      = cidrsubnet(local.vpc_cidr, local.node_subnet_bits, each.value)\n  ipv6_cidr_block                 = cidrsubnet(aws_vpc.this.ipv6_cidr_block, 8, each.value)   # one /64 per zone from the /56\n  assign_ipv6_address_on_creation = true\n  tags = {\n    Name                              = "eks-nodes-${each.key}"\n    "kubernetes.io/role/internal-elb" = "1"\n  }\n}\n\nresource "aws_eks_cluster" "this" {\n  name     = "demo"\n  role_arn = aws_iam_role.cluster.arn\n  vpc_config {\n    subnet_ids = [for s in aws_subnet.nodes : s.id]\n  }\n  kubernetes_network_config {\n    ip_family = "ipv6"   # creation-time choice; Services get a ULA range automatically\n  }\n}\n\n# The vpc-cni add-on defaults to prefix delegation on an IPv6 cluster (ENABLE_IPv6=true, ENABLE_PREFIX_DELEGATION=true).\nresource "aws_eks_node_group" "default" {\n  cluster_name    = aws_eks_cluster.this.name\n  node_group_name = "default"\n  node_role_arn   = aws_iam_role.node.arn\n  subnet_ids      = [for s in aws_subnet.nodes : s.id]\n  instance_types  = ["' + i.type + '"]   # Nitro required\n  scaling_config {\n    desired_size = ' + (r.nodesPerAz * r.azs) + '\n    min_size     = ' + (r.nodesPerAz * r.azs) + '\n    max_size     = ' + (r.nodesPlanned * r.azs) + '\n  }\n}\n# Expect ' + r.maxPods.maxPods + ' allocatable pods per node; the node role also needs the IPv6 CNI policy (AssignIpv6Addresses, ec2:DescribeNetworkInterfaces...).\n';
 }
 function cliEksIpv6() {
   const r = R, i = r.instance;
-  return hdr('#') + '# eksctl ClusterConfig for an IPv6 cluster\napiVersion: eksctl.io/v1alpha5\nkind: ClusterConfig\nmetadata:\n  name: demo\n  region: us-east-1\n  version: "1.33"\nkubernetesNetworkConfig:\n  ipFamily: IPv6          # creation-time choice\naddons:\n  - name: vpc-cni\n  - name: coredns\n  - name: kube-proxy\niam:\n  withOIDC: true\nvpc:\n  cidr: 10.0.0.0/16       # ' + r.azs + ' IPv4 subnets of /' + r.perZone.prefix + ' hold nodes + control plane; eksctl adds the IPv6 /56 and /64s\nmanagedNodeGroups:\n  - name: default\n    instanceType: ' + i.type + '   # Nitro required\n    desiredCapacity: ' + (r.nodesPerAz * r.azs) + '\n    maxSize: ' + (r.nodesPlanned * r.azs) + '\n\n# Verify after creation:\n# kubectl get pods -A -o wide          # Pod IPs are IPv6\n# kubectl get svc kubernetes            # ClusterIP in the ULA range\n# kubectl get node -o jsonpath=\'{.items[*].status.allocatable.pods}\'   # expect ' + r.maxPods.maxPods + '\n';
+  return hdr('#') + '# eksctl ClusterConfig for an IPv6 cluster\napiVersion: eksctl.io/v1alpha5\nkind: ClusterConfig\nmetadata:\n  name: demo\n  region: us-east-1\n  version: "1.33"\nkubernetesNetworkConfig:\n  ipFamily: IPv6          # creation-time choice\naddons:\n  - name: vpc-cni\n  - name: coredns\n  - name: kube-proxy\niam:\n  withOIDC: true\nvpc:\n  cidr: ' + vpcCidr().cidr + '       # ' + r.azs + ' IPv4 subnets of /' + r.perZone.prefix + ' hold nodes + control plane; eksctl adds the IPv6 /56 and /64s\nmanagedNodeGroups:\n  - name: default\n    instanceType: ' + i.type + '   # Nitro required\n    desiredCapacity: ' + (r.nodesPerAz * r.azs) + '\n    maxSize: ' + (r.nodesPlanned * r.azs) + '\n\n# Verify after creation:\n# kubectl get pods -A -o wide          # Pod IPs are IPv6\n# kubectl get svc kubernetes            # ClusterIP in the ULA range\n# kubectl get node -o jsonpath=\'{.items[*].status.allocatable.pods}\'   # expect ' + r.maxPods.maxPods + '\n';
 }
 function mdEksIpv6() {
   const r = R;
@@ -1027,7 +1046,7 @@ function tfEksCustom() {
   const azs = JSON.stringify(Array.from({ length: r.azs }, (_, k) => '${data.aws_region.current.region}' + String.fromCharCode(97 + k)));
   const env = ['      AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"', '      ENI_CONFIG_LABEL_DEF               = "topology.kubernetes.io/zone"'].concat(r.perNode.mode === 'custom-prefix' ? ['      ENABLE_PREFIX_DELEGATION           = "true"', '      WARM_PREFIX_TARGET                 = "1"'] : []);
   return hdr('#') + '# EKS custom networking: ' + fmt(r.nodesPlanned) + ' x ' + i.type + ' per zone, ' + r.podsPerNode + ' pods per node (primary ENI serves no pods)\n# node subnet per zone: /' + r.perZone.prefix + ' (' + fmt(r.perZone.need) + ' needed); pod subnet per zone: /' + pz.prefix + ' (' + fmt(pz.need) + ' needed)\n\n' +
-'locals {\n  vpc_cidr         = "10.0.0.0/16"\n  azs              = ' + azs + '\n  node_subnet_bits = ' + (r.perZone.prefix - 16) + '  # /16 VPC -> /' + r.perZone.prefix + ' node subnets\n  node_subnets     = [for k, az in local.azs : cidrsubnet(local.vpc_cidr, local.node_subnet_bits, k)]\n' +
+'locals {\n  vpc_cidr         = "' + vpcCidr().cidr + '"\n  azs              = ' + azs + '\n  node_subnet_bits = ' + Math.max(0, r.perZone.prefix - vpcCidr().prefix) + '  # /' + vpcCidr().prefix + ' VPC -> /' + r.perZone.prefix + ' node subnets\n  node_subnets     = [for k, az in local.azs : cidrsubnet(local.vpc_cidr, local.node_subnet_bits, k)]\n' +
 (one ? '  pod_cidr         = "' + r.secondary.cidr + '"  # secondary block from 100.64.0.0/10\n  pod_subnets      = [for k, az in local.azs : cidrsubnet(local.pod_cidr, ' + (pz.prefix - r.secondary.prefix) + ', k)]  # /' + pz.prefix + ' each\n'
      : '  pod_cidrs        = ' + JSON.stringify(podCidrs()) + '  # one /16 secondary block per zone (counts toward 5 CIDR blocks per VPC)\n  pod_subnets      = [for k, az in local.azs : cidrsubnet(local.pod_cidrs[k], ' + (pz.prefix - 16) + ', 0)]\n') +
 '}\n\ndata "aws_region" "current" {}\n\n' +
@@ -1111,6 +1130,13 @@ function renderAks(r) {
 }
 function renderChecks(r) {
   const items = r.items.slice();
+  if (S.cloud === 'eks') {
+    const v = vpcCidr(), need = vpcNeed(r), pct = Math.round(need / v.size * 100);
+    if (!E.parseCidr(S.eks.vpc)) items.unshift({ k: 'warn', t: 'VPC CIDR is not valid, using 10.0.0.0/16', d: 'Type the VPC block as address/prefix, for example 10.42.0.0/18.' });
+    items.unshift(need > v.size
+      ? { k: 'bad', t: r.azs + ' × /' + r.perZone.prefix + ' do not fit in ' + v.cidr, d: 'The zone subnets need ' + fmt(need) + ' addresses and the VPC has ' + fmt(v.size) + '. Use a /' + Math.max(16, 32 - Math.ceil(Math.log2(need))) + ' or larger VPC, add a secondary CIDR block, turn on prefix delegation, or reduce nodes per zone.', src: 'vpcCidrQuota' }
+      : { k: pct > 75 ? 'warn' : 'info', t: 'zone subnets take ' + pct + '% of ' + v.cidr, d: fmt(need) + ' of ' + fmt(v.size) + ' addresses go to the ' + r.azs + ' node subnets' + (r.custom ? ' (pod subnets come from the secondary block)' : '') + '; ' + fmt(v.size - need) + ' stay free for public subnets, load balancers and databases.' });
+  }
   if (!items.some(i => i.k === 'bad')) items.unshift({ k: 'ok', t: 'nothing blocks this plan', d: 'The sizes above satisfy the rules the cloud documents. Review the informational items before you create the ranges.' });
   const nb = items.filter(i => i.k === 'bad').length, nw = items.filter(i => i.k === 'warn').length;
   $('checksNote').textContent = nb ? nb + ' blocking' + (nw ? ', ' + nw + ' warning' + (nw > 1 ? 's' : '') : '') : nw ? nw + ' warning' + (nw > 1 ? 's' : '') + ', nothing blocking' : 'all clear';
@@ -1119,7 +1145,7 @@ function renderChecks(r) {
 }
 function renderSvc() {
   if (S.cloud !== 'eks') return;
-  const c = E.eksServiceCidrCheck(S.eks.svc, S.eks.vpcs.split(/\n|,/).map(s => s.trim()).filter(Boolean));
+  const c = E.eksServiceCidrCheck(S.eks.svc, [S.eks.vpc].concat(S.eks.vpcs.split(/\n|,/)).map(s => s.trim()).filter(Boolean));
   $('svcCidr').classList.toggle('bad', !c.ok);
   $('svcOut').innerHTML = (c.ok ? '<div class="check ok"><div class="ic">✓</div><div><b>' + esc(c.cidr) + ' is a valid service CIDR</b><small>inside a private range, /12 to /24, no overlap with the VPC CIDRs listed</small></div></div>' : '') + c.items.map(i => '<div class="check ' + i.k + '"><div class="ic">' + ({ warn: '!', bad: '✕' }[i.k] || 'i') + '</div><div><b>' + esc(i.t) + '</b><small>' + esc(i.d) + '</small></div></div>').join('');
 }
@@ -1128,12 +1154,12 @@ function renderSvc() {
 function plannerHash() {
   const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, '');
   if (S.cloud === 'eks' && R.custom) {
-    const p = Math.min(28, Math.max(16, R.perZone.prefix - E.log2ceil(R.azs) - 1));
-    return enc({ c: 'aws', a: '10.0.0.0', p, z: R.azs, f: 0, k: 1, g: 0, e: podCidrs().map(c => c + ' eks pod subnets (secondary CIDR)').join('\n'), t: [['eks-nodes', 'private', 'prefix', R.perZone.prefix], ['public', 'public', 'prefix', Math.min(28, R.perZone.prefix + 1)]], r: 1, s: 6, v: 'x' });
+    const v = vpcCidr(), p = vpcFits(R) ? v.prefix : Math.min(28, Math.max(16, R.perZone.prefix - E.log2ceil(R.azs) - 1));
+    return enc({ c: 'aws', a: vpcFits(R) ? v.cidr.split('/')[0] : '10.0.0.0', p, z: R.azs, f: 0, k: 1, g: 0, e: podCidrs().map(c => c + ' eks pod subnets (secondary CIDR)').join('\n'), t: [['eks-nodes', 'private', 'prefix', R.perZone.prefix], ['public', 'public', 'prefix', Math.min(28, R.perZone.prefix + 1)]], r: 1, s: 6, v: 'x' });
   }
   if (S.cloud === 'eks') {
-    const p = Math.min(28, Math.max(16, R.perZone.prefix - E.log2ceil(R.azs) - 1));
-    return enc({ c: 'aws', a: '10.0.0.0', p, z: R.azs, f: 0, k: 1, g: 0, e: '', t: [['eks-nodes', 'private', 'prefix', R.perZone.prefix], ['public', 'public', 'prefix', Math.min(28, R.perZone.prefix + 2)]], r: 1, s: 6, v: 'x' });
+    const v = vpcCidr(), p = vpcFits(R) ? v.prefix : Math.min(28, Math.max(16, R.perZone.prefix - E.log2ceil(R.azs) - 1));
+    return enc({ c: 'aws', a: vpcFits(R) ? v.cidr.split('/')[0] : '10.0.0.0', p, z: R.azs, f: 0, k: 1, g: 0, e: '', t: [['eks-nodes', 'private', 'prefix', R.perZone.prefix], ['public', 'public', 'prefix', Math.min(28, R.perZone.prefix + 2)]], r: 1, s: 6, v: 'x' });
   }
   if (S.cloud === 'gke') {
     const small = Math.min(R.primary.prefix, R.podRange.prefix);
@@ -1162,14 +1188,14 @@ function tfEks() {
   if (R.custom) return tfEksCustom();
   const r = R, i = r.instance;
   return hdr('#') + '# ' + fmt(r.nodesPlanned) + ' x ' + i.type + ' per zone, ' + r.podsPerNode + ' pods per node, ' + (r.windows ? 'Windows nodes (single ENI' + (r.perNode.mode === 'windows-prefix' ? ', prefix delegation via enable-windows-prefix-delegation in the amazon-vpc-cni ConfigMap)' : ')') : r.perNode.mode === 'prefix' ? 'prefix delegation' : 'secondary IP mode') + '\n# subnet per zone: /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable, ' + fmt(r.perZone.need) + ' needed)\n\n' +
-'locals {\n  vpc_cidr        = "10.0.0.0/16"\n  azs             = ' + JSON.stringify(Array.from({ length: r.azs }, (_, k) => 'a' + k).map((_, k) => '${data.aws_region.current.region}' + String.fromCharCode(97 + k))).replace(/"\$\{/g, '"${') + '\n  node_subnet_bits = ' + (r.perZone.prefix - 16) + '  # /16 VPC -> /' + r.perZone.prefix + ' subnets\n  node_subnets    = [for k, az in local.azs : cidrsubnet(local.vpc_cidr, local.node_subnet_bits, k)]\n}\n\ndata "aws_region" "current" {}\n\nresource "aws_subnet" "nodes" {\n  for_each          = { for k, az in local.azs : az => local.node_subnets[k] }\n  vpc_id            = aws_vpc.this.id\n  availability_zone = each.key\n  cidr_block        = each.value\n  tags = {\n    Name                              = "eks-nodes-${each.key}"\n    "kubernetes.io/role/internal-elb" = "1"\n  }\n}\n\nresource "aws_eks_cluster" "this" {\n  name     = "demo"\n  role_arn = aws_iam_role.cluster.arn\n  vpc_config {\n    subnet_ids = [for s in aws_subnet.nodes : s.id]\n  }\n  kubernetes_network_config {\n    service_ipv4_cidr = "' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '"  # /12 to /24, private, not overlapping the VPC\n  }\n}\n\nresource "aws_eks_node_group" "default" {\n  cluster_name    = aws_eks_cluster.this.name\n  node_group_name = "default"\n  node_role_arn   = aws_iam_role.node.arn\n  subnet_ids      = [for s in aws_subnet.nodes : s.id]\n  instance_types  = ["' + i.type + '"]\n  scaling_config {\n    desired_size = ' + (r.nodesPerAz * r.azs) + '\n    min_size     = ' + (r.nodesPerAz * r.azs) + '\n    max_size     = ' + (r.nodesPlanned * r.azs) + '\n  }\n}\n' +
+'locals {\n  vpc_cidr        = "' + vpcCidr().cidr + '"\n  azs             = ' + JSON.stringify(Array.from({ length: r.azs }, (_, k) => 'a' + k).map((_, k) => '${data.aws_region.current.region}' + String.fromCharCode(97 + k))).replace(/"\$\{/g, '"${') + '\n  node_subnet_bits = ' + Math.max(0, r.perZone.prefix - vpcCidr().prefix) + '  # /' + vpcCidr().prefix + ' VPC -> /' + r.perZone.prefix + ' subnets\n  node_subnets    = [for k, az in local.azs : cidrsubnet(local.vpc_cidr, local.node_subnet_bits, k)]\n}\n\ndata "aws_region" "current" {}\n\nresource "aws_subnet" "nodes" {\n  for_each          = { for k, az in local.azs : az => local.node_subnets[k] }\n  vpc_id            = aws_vpc.this.id\n  availability_zone = each.key\n  cidr_block        = each.value\n  tags = {\n    Name                              = "eks-nodes-${each.key}"\n    "kubernetes.io/role/internal-elb" = "1"\n  }\n}\n\nresource "aws_eks_cluster" "this" {\n  name     = "demo"\n  role_arn = aws_iam_role.cluster.arn\n  vpc_config {\n    subnet_ids = [for s in aws_subnet.nodes : s.id]\n  }\n  kubernetes_network_config {\n    service_ipv4_cidr = "' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '"  # /12 to /24, private, not overlapping the VPC\n  }\n}\n\nresource "aws_eks_node_group" "default" {\n  cluster_name    = aws_eks_cluster.this.name\n  node_group_name = "default"\n  node_role_arn   = aws_iam_role.node.arn\n  subnet_ids      = [for s in aws_subnet.nodes : s.id]\n  instance_types  = ["' + i.type + '"]\n  scaling_config {\n    desired_size = ' + (r.nodesPerAz * r.azs) + '\n    min_size     = ' + (r.nodesPerAz * r.azs) + '\n    max_size     = ' + (r.nodesPlanned * r.azs) + '\n  }\n}\n' +
 (r.windows ? '\n# Windows node group: ami_type = "WINDOWS_CORE_2022_x86_64"; enable Windows IPAM with enable-windows-ipam: "true" in the amazon-vpc-cni ConfigMap' + (r.perNode.mode === 'windows-prefix' ? ' and enable-windows-prefix-delegation: "true"' : '') + '.\n' : r.perNode.mode === 'prefix' ? '\nresource "aws_eks_addon" "vpc_cni" {\n  cluster_name = aws_eks_cluster.this.name\n  addon_name   = "vpc-cni"\n  configuration_values = jsonencode({\n    env = {\n      ENABLE_PREFIX_DELEGATION = "true"\n      WARM_PREFIX_TARGET       = "1"\n    }\n  })\n}\n' : '\n# Each node holds ' + r.perNode.ips + ' VPC addresses for ' + r.podsPerNode + ' pods (every attached ENI is fully allocated). To hold fewer, set WARM_IP_TARGET and MINIMUM_IP_TARGET on the vpc-cni add-on.\n');
 }
 function cliEks() {
   if (R.ipv6) return cliEksIpv6();
   if (R.custom) return cliEksCustom();
   const r = R, i = r.instance;
-  return hdr('#') + '# eksctl ClusterConfig\napiVersion: eksctl.io/v1alpha5\nkind: ClusterConfig\nmetadata:\n  name: demo\n  region: us-east-1\nkubernetesNetworkConfig:\n  serviceIPv4CIDR: ' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '\nvpc:\n  cidr: 10.0.0.0/16   # ' + r.azs + ' node subnets of /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable each)\n' + (r.perNode.mode === 'prefix' ? 'addons:\n  - name: vpc-cni\n    configurationValues: |\n      env:\n        ENABLE_PREFIX_DELEGATION: "true"\n        WARM_PREFIX_TARGET: "1"\n' : '') + 'managedNodeGroups:\n  - name: default\n    instanceType: ' + i.type + '\n    desiredCapacity: ' + (r.nodesPerAz * r.azs) + '\n    maxSize: ' + (r.nodesPlanned * r.azs) + '\n    maxPodsPerNode: ' + r.podsPerNode + '   # formula ' + (r.perNode.mode === 'prefix' ? fmt(r.maxPods.prefixFormula) + ', cap ' + r.maxPods.cap : r.maxPods.eniFormula + (r.maxPods.rule === 'cap' ? ', cap ' + r.maxPods.cap : '')) + '\n\n# Check what a running node advertises:\n# kubectl get node -o jsonpath=\'{range .items[*]}{.metadata.name}{"\\t"}{.status.allocatable.pods}{"\\n"}{end}\'\n# Count free addresses in a subnet:\n# aws ec2 describe-subnets --subnet-ids subnet-0123 --query \'Subnets[0].AvailableIpAddressCount\'\n';
+  return hdr('#') + '# eksctl ClusterConfig\napiVersion: eksctl.io/v1alpha5\nkind: ClusterConfig\nmetadata:\n  name: demo\n  region: us-east-1\nkubernetesNetworkConfig:\n  serviceIPv4CIDR: ' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : '172.20.0.0/16') + '\nvpc:\n  cidr: ' + vpcCidr().cidr + '   # ' + r.azs + ' node subnets of /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable each)\n' + (r.perNode.mode === 'prefix' ? 'addons:\n  - name: vpc-cni\n    configurationValues: |\n      env:\n        ENABLE_PREFIX_DELEGATION: "true"\n        WARM_PREFIX_TARGET: "1"\n' : '') + 'managedNodeGroups:\n  - name: default\n    instanceType: ' + i.type + '\n    desiredCapacity: ' + (r.nodesPerAz * r.azs) + '\n    maxSize: ' + (r.nodesPlanned * r.azs) + '\n    maxPodsPerNode: ' + r.podsPerNode + '   # formula ' + (r.perNode.mode === 'prefix' ? fmt(r.maxPods.prefixFormula) + ', cap ' + r.maxPods.cap : r.maxPods.eniFormula + (r.maxPods.rule === 'cap' ? ', cap ' + r.maxPods.cap : '')) + '\n\n# Check what a running node advertises:\n# kubectl get node -o jsonpath=\'{range .items[*]}{.metadata.name}{"\\t"}{.status.allocatable.pods}{"\\n"}{end}\'\n# Count free addresses in a subnet:\n# aws ec2 describe-subnets --subnet-ids subnet-0123 --query \'Subnets[0].AvailableIpAddressCount\'\n';
 }
 function tfGke() {
   const r = R;
@@ -1306,7 +1332,7 @@ function dgEks(r) {
     s += R_(zx, zy, zoneW, zoneH, 'zone', 10) + zs;
   }
   const vpcH = zoneH + 56;
-  let out = R_(10, 8, DW - 20, vpcH, 'vpc', 12) + T_(22, 28, 'VPC 10.0.0.0/16' + (r.custom ? ' + secondary ' + podCidrs().join(', ') : r.ipv6 ? ' + Amazon IPv6 /56' : '') + '  ·  ' + azs + ' zones  ·  ' + fmt(r.totals.nodes) + ' nodes  ·  ' + fmt(r.totals.pods) + ' pods  ·  ' + fmt(r.totals.addresses) + ' addresses reserved', 't1') + s;
+  let out = R_(10, 8, DW - 20, vpcH, 'vpc', 12) + T_(22, 28, 'VPC ' + vpcCidr().cidr + (vpcFits(r) ? '' : '  (too small, see Checks)') + (r.custom ? ' + secondary ' + podCidrs().join(', ') : r.ipv6 ? ' + Amazon IPv6 /56' : '') + '  ·  ' + azs + ' zones  ·  ' + fmt(r.totals.nodes) + ' nodes  ·  ' + fmt(r.totals.pods) + ' pods  ·  ' + fmt(r.totals.addresses) + ' addresses reserved', 't1') + s;
   const sy = 8 + vpcH + 10;
   out += R_(10, sy, DW - 20, 30, 'svc', 8) + T_(22, sy + 19, 'Service CIDR ' + (E.parseCidr(S.eks.svc) ? E.parseCidr(S.eks.svc).cidr : S.eks.svc) + (r.ipv6 ? ' (IPv6 ULA on an IPv6 cluster)' : '') + '  ·  cluster-internal, takes no VPC addresses, must not overlap the VPC', 't2');
   $('diagram').innerHTML = dgWrap(out, sy + 38, 'EKS cluster: ' + azs + ' zones, ' + fmt(r.totals.nodes) + ' nodes');
@@ -1375,7 +1401,7 @@ function guide(n) { if (n >= 5 && guided) { guided = false; const a = $('answer'
 function touch(k) { if (!guided) return; if (k + 1 > cur) { cur = k + 1; guide(cur); } }
 function stepLabels() {
   $('s3h').textContent = { eks: 'Instance type', gke: 'Cluster mode', aks: 'Network plugin' }[S.cloud];
-  $('s4h').textContent = S.cloud === 'eks' ? 'Nodes and zones' : 'How many nodes?';
+  $('s4h').textContent = S.cloud === 'eks' ? 'Nodes, zones and VPC' : 'How many nodes?';
   $('s5h').textContent = S.cloud === 'eks' ? 'Pods per node' : S.cloud === 'gke' ? 'Pods and Services' : 'Pods per node';
   const on = [];
   if (S.cloud === 'eks') { if (S.eks.custom) on.push('custom networking'); if (S.eks.os === 'windows') on.push('Windows'); if (S.eks.fam === 'ipv6') on.push('IPv6'); if (!S.eks.managed) on.push('self-managed nodes'); }
@@ -1406,7 +1432,7 @@ function init() {
   [...$('osSeg').children].forEach(b => b.onclick = () => { S.eks.os = b.dataset.v; pushInputs(); update(); });
   [...$('famSeg').children].forEach(b => b.onclick = () => { S.eks.fam = b.dataset.v; pushInputs(); update(); });
   [...$('tabs').children].forEach(b => b.onclick = () => { S.tab = b.dataset.v; renderCode(); });
-  ['inst', 'nodesAz', 'podsEks', 'cpIps', 'prefixSw', 'customSw', 'managedSw', 'svcCidr', 'vpcCidrs', 'nodesGke', 'podsGke', 'svcManaged', 'svcPrefix', 'aksMode', 'nodesAks', 'podsAks', 'surge', 'growth'].forEach(id => { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
+  ['inst', 'nodesAz', 'podsEks', 'cpIps', 'prefixSw', 'customSw', 'managedSw', 'svcCidr', 'vpcMain', 'vpcCidrs', 'nodesGke', 'podsGke', 'svcManaged', 'svcPrefix', 'aksMode', 'nodesAks', 'podsAks', 'surge', 'growth'].forEach(id => { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
   $('copyCode').onclick = () => navigator.clipboard.writeText($('code').textContent).then(() => toast('Copied'));
   $('shareBtn').onclick = () => { saveHash(); navigator.clipboard.writeText(location.href).then(() => toast('Link copied - it reproduces this calculation')); };
   $('printBtn').onclick = () => window.print();
