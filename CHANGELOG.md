@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2 - 2026-10-28
+
+- Step 1 is "Cloud and network": the cloud plus the VPC CIDR (EKS) or the VNet address space (AKS, new, share link key `vn`); GKE explains that its VPC has no range of its own. The zone subnets (EKS), node and pod subnets (AKS) are now named from that block in the diagram, the ranges table and the exports (10.0.0.0/24, 10.0.1.0/24, ... or 10.50.0.0/27 and 10.50.16.0/20), and AKS gets the same fit check as EKS.
+- A chosen common case stays selected (share link key `pr`). Changing a value afterwards keeps it selected with an "edited" marker and a note that names what changed; clicking the case again resets it. Switching cloud clears it.
+
 ## 1.3.1 - 2026-10-28
 
 - VPC CIDR is an input (step 4, EKS). The diagram label, the Terraform `vpc_cidr` and `cidrsubnet` newbits, the eksctl `vpc.cidr`, the service CIDR overlap check and the VPC Subnet Planner hand-off use it instead of a hard-coded 10.0.0.0/16, and a check reports whether the zone subnets fit (blocking when they do not, a warning above 75%). Share link key `vp`. Subnet sizing itself never depended on the VPC size.

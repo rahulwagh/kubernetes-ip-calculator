@@ -94,6 +94,7 @@ input.bad{border-color:var(--red)}
 .chip:hover,.chip.on{border-color:var(--blue);color:var(--blue)}
 .chip.on{border-style:solid;background:color-mix(in srgb,var(--blue) 12%,transparent);font-weight:600}
 .chip.on::before{content:"✓ "}
+.chip.on.edited::after{content:" · edited";font-weight:400;color:var(--muted)}
 .switch{display:flex;align-items:center;gap:10px;font-size:.86rem;cursor:pointer;user-select:none}
 .switch input{appearance:none;width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:.2s;margin:0;flex-shrink:0}
 .switch input:checked{background:var(--blue)}
@@ -224,13 +225,16 @@ details.fold>summary:hover{color:var(--blue)}
   <div class="grid">
     <aside class="steps" id="steps">
       <div class="card step" id="step1" data-step="0">
-        <div class="hd"><span class="num">1</span><h2>Which cloud?</h2><span class="cue">start here</span></div>
+        <div class="hd"><span class="num">1</span><h2>Cloud and network</h2><span class="cue">start here</span></div>
         <div class="bd stack">
           <div class="clouds" id="cloudSeg">
             <button data-v="eks"><svg class="logo" viewBox="0 0 128 128" aria-hidden="true" focusable="false"><path fill="currentColor" d="M36.379 53.64c0 1.56.168 2.825.465 3.75.336.926.758 1.938 1.347 3.032.207.336.293.672.293.969 0 .418-.254.84-.8 1.261l-2.653 1.77c-.379.25-.758.379-1.093.379-.422 0-.844-.211-1.266-.59a13.28 13.28 0 0 1-1.516-1.98 34.153 34.153 0 0 1-1.304-2.485c-3.282 3.875-7.41 5.813-12.38 5.813-3.535 0-6.355-1.012-8.421-3.032-2.063-2.023-3.114-4.718-3.114-8.086 0-3.578 1.262-6.484 3.833-8.671 2.566-2.192 5.976-3.286 10.316-3.286 1.43 0 2.902.125 4.46.336 1.56.211 3.161.547 4.845.926v-3.074c0-3.2-.676-5.43-1.98-6.734C26.061 32.633 23.788 32 20.546 32c-1.473 0-2.988.168-4.547.547a33.416 33.416 0 0 0-4.547 1.433c-.676.293-1.18.461-1.473.547-.296.082-.507.125-.675.125-.59 0-.883-.422-.883-1.304v-2.063c0-.676.082-1.18.293-1.476.21-.293.59-.586 1.18-.883 1.472-.758 3.242-1.39 5.304-1.895 2.063-.547 4.254-.8 6.57-.8 5.008 0 8.672 1.136 11.032 3.41 2.316 2.273 3.492 5.726 3.492 10.359v13.64Zm-17.094 6.403c1.387 0 2.82-.254 4.336-.758 1.516-.508 2.863-1.433 4-2.695.672-.8 1.18-1.684 1.43-2.695.254-1.012.422-2.23.422-3.665v-1.765a34.401 34.401 0 0 0-3.871-.719 31.816 31.816 0 0 0-3.961-.25c-2.82 0-4.883.547-6.274 1.684-1.387 1.136-2.062 2.734-2.062 4.84 0 1.98.504 3.453 1.558 4.464 1.012 1.051 2.485 1.559 4.422 1.559Zm33.809 4.547c-.758 0-1.262-.125-1.598-.422-.34-.254-.633-.84-.887-1.64L40.715 29.98c-.25-.843-.38-1.39-.38-1.687 0-.672.337-1.05 1.013-1.05h4.125c.8 0 1.347.124 1.644.421.336.25.59.84.84 1.64l7.074 27.876 6.57-27.875c.208-.84.462-1.39.797-1.64.34-.255.93-.423 1.688-.423h3.367c.8 0 1.348.125 1.684.422.336.25.633.84.8 1.64l6.653 28.212 7.285-28.211c.25-.84.547-1.39.84-1.64.336-.255.887-.423 1.644-.423h3.914c.676 0 1.055.336 1.055 1.051 0 .21-.043.422-.086.676-.043.254-.125.59-.293 1.05L80.801 62.57c-.254.84-.547 1.387-.887 1.64-.336.255-.883.423-1.598.423h-3.62c-.801 0-1.348-.13-1.684-.422-.34-.297-.633-.844-.801-1.684l-6.527-27.16-6.485 27.117c-.21.844-.46 1.391-.8 1.684-.337.297-.926.422-1.684.422Zm54.105 1.137c-2.187 0-4.379-.254-6.484-.758-2.106-.504-3.746-1.055-4.84-1.684-.676-.379-1.137-.8-1.305-1.18a2.919 2.919 0 0 1-.254-1.18v-2.148c0-.882.336-1.304.97-1.304.25 0 .503.043.757.129.25.082.629.25 1.05.418a23.102 23.102 0 0 0 4.634 1.476c1.683.336 3.324.504 5.011.504 2.653 0 4.715-.465 6.145-1.39 1.433-.926 2.191-2.274 2.191-4 0-1.18-.379-2.145-1.136-2.946-.758-.8-2.192-1.516-4.254-2.191l-6.106-1.895c-3.074-.969-5.348-2.398-6.734-4.293-1.39-1.855-2.106-3.918-2.106-6.105 0-1.77.38-3.328 1.137-4.676a10.829 10.829 0 0 1 3.031-3.453c1.262-.965 2.696-1.684 4.38-2.188 1.683-.504 3.452-.715 5.304-.715.926 0 1.894.043 2.82.168.969.125 1.852.293 2.738.461.84.211 1.641.422 2.399.676.758.254 1.348.504 1.77.758.59.336 1.011.672 1.261 1.05.254.34.379.802.379 1.391v1.98c0 .884-.336 1.348-.969 1.348-.336 0-.883-.171-1.597-.507-2.403-1.094-5.098-1.641-8.086-1.641-2.399 0-4.293.379-5.598 1.18-1.309.797-1.98 2.02-1.98 3.746 0 1.18.421 2.191 1.261 2.988.844.8 2.403 1.602 4.633 2.316l5.98 1.895c3.032.969 5.22 2.316 6.524 4.043 1.305 1.727 1.938 3.707 1.938 5.895 0 1.812-.38 3.453-1.094 4.882-.758 1.434-1.77 2.696-3.074 3.707-1.305 1.051-2.864 1.809-4.672 2.36-1.895.586-3.875.883-6.024.883Zm0 0"/> <path fill="#f90" d="M118 73.348c-4.432.063-9.664 1.052-13.621 3.832-1.223.883-1.012 2.062.336 1.894 4.508-.547 14.44-1.726 16.21.547 1.77 2.23-1.976 11.62-3.663 15.79-.504 1.26.59 1.769 1.726.8 7.41-6.231 9.348-19.242 7.832-21.137-.757-.925-4.388-1.79-8.82-1.726zM1.63 75.859c-.927.116-1.347 1.236-.368 2.121 16.508 14.902 38.359 23.872 62.613 23.872 17.305 0 37.43-5.43 51.281-15.66 2.273-1.688.297-4.254-2.02-3.204-15.534 6.57-32.421 9.77-47.788 9.77-22.778 0-44.8-6.273-62.653-16.633-.39-.231-.755-.304-1.064-.266z"/></svg><b>Amazon EKS</b><small>VPC CNI: pods take VPC addresses</small></button>
             <button data-v="gke"><svg class="logo" viewBox="0 0 128 128" aria-hidden="true" focusable="false"><path fill="#ea4535" d="M80.6 40.3h.4l-.2-.2 14-14v-.3c-11.8-10.4-28.1-14-43.2-9.5C36.5 20.8 24.9 32.8 20.7 48c.2-.1.5-.2.8-.2 5.2-3.4 11.4-5.4 17.9-5.4 2.2 0 4.3.2 6.4.6.1-.1.2-.1.3-.1 9-9.9 24.2-11.1 34.6-2.6h-.1z"/><path fill="#557ebf" d="M108.1 47.8c-2.3-8.5-7.1-16.2-13.8-22.1L80 39.9c6 4.9 9.5 12.3 9.3 20v2.5c16.9 0 16.9 25.2 0 25.2H63.9v20h-.1l.1.2h25.4c14.6.1 27.5-9.3 31.8-23.1 4.3-13.8-1-28.8-13-36.9z"/><path fill="#36a852" d="M39 107.9h26.3V87.7H39c-1.9 0-3.7-.4-5.4-1.1l-15.2 14.6v.2c6 4.3 13.2 6.6 20.7 6.6z"/><path fill="#f9bc15" d="M40.2 41.9c-14.9.1-28.1 9.3-32.9 22.8-4.8 13.6 0 28.5 11.8 37.3l15.6-14.9c-8.6-3.7-10.6-14.5-4-20.8 6.6-6.4 17.8-4.4 21.7 3.8L68 55.2C61.4 46.9 51.1 42 40.2 42.1z"/></svg><b>Google GKE</b><small>VPC-native: alias range per node</small></button>
             <button data-v="aks"><svg class="logo" viewBox="0 0 128 128" aria-hidden="true" focusable="false"><defs><linearGradient id="azure-original-a" x1="60.919" y1="9.602" x2="18.667" y2="134.423" gradientUnits="userSpaceOnUse"><stop stop-color="#114A8B"/><stop offset="1" stop-color="#0669BC"/></linearGradient><linearGradient id="azure-original-b" x1="74.117" y1="67.772" x2="64.344" y2="71.076" gradientUnits="userSpaceOnUse"><stop stop-opacity=".3"/><stop offset=".071" stop-opacity=".2"/><stop offset=".321" stop-opacity=".1"/><stop offset=".623" stop-opacity=".05"/><stop offset="1" stop-opacity="0"/></linearGradient><linearGradient id="azure-original-c" x1="68.742" y1="5.961" x2="115.122" y2="129.525" gradientUnits="userSpaceOnUse"><stop stop-color="#3CCBF4"/><stop offset="1" stop-color="#2892DF"/></linearGradient></defs><path d="M46.09.002h40.685L44.541 125.137a6.485 6.485 0 01-6.146 4.413H6.733a6.482 6.482 0 01-5.262-2.699 6.474 6.474 0 01-.876-5.848L39.944 4.414A6.488 6.488 0 0146.09 0z" fill="url(#azure-original-a)" transform="translate(.587 4.468) scale(.91904)"/><path d="M97.28 81.607H37.987a2.743 2.743 0 00-1.874 4.751l38.1 35.562a5.991 5.991 0 004.087 1.61h33.574z" fill="#0078d4"/><path d="M46.09.002A6.434 6.434 0 0039.93 4.5L.644 120.897a6.469 6.469 0 006.106 8.653h32.48a6.942 6.942 0 005.328-4.531l7.834-23.089 27.985 26.101a6.618 6.618 0 004.165 1.519h36.396l-15.963-45.616-46.533.011L86.922.002z" fill="url(#azure-original-b)" transform="translate(.587 4.468) scale(.91904)"/><path d="M98.055 4.408A6.476 6.476 0 0091.917.002H46.575a6.478 6.478 0 016.137 4.406l39.35 116.594a6.476 6.476 0 01-6.137 8.55h45.344a6.48 6.48 0 006.136-8.55z" fill="url(#azure-original-c)" transform="translate(.587 4.468) scale(.91904)"/></svg><b>Azure AKS</b><small>Overlay, Pod Subnet or legacy CNI</small></button>
           </div>
+          <div class="field" data-only="eks"><label for="vpcMain">VPC CIDR</label><input type="text" id="vpcMain" value="10.0.0.0/16" class="mono" spellcheck="false"><span class="hint">The cluster subnets are carved from this block (/16 to /28). The result names every subnet and says if they do not fit.</span></div>
+          <div class="field" data-only="aks"><label for="vnetMain">VNet address space</label><input type="text" id="vnetMain" value="10.240.0.0/16" class="mono" spellcheck="false"><span class="hint">The node subnet, and the pod subnet in Pod Subnet mode, are carved from it.</span></div>
+          <span class="hint" data-only="gke">A Google Cloud VPC has no address range of its own. The result sizes the subnet primary range (nodes) and the Pod secondary range for you.</span>
           <a class="next" href="#step2">Next: start from a common case ↓</a>
         </div>
       </div>
@@ -239,7 +243,7 @@ details.fold>summary:hover{color:var(--blue)}
         <div class="hd"><span class="num">2</span><h2>Start from a common case</h2><span class="cue">pick one, or skip</span></div>
         <div class="bd stack">
           <div class="presets" id="presets"></div>
-          <span class="hint">A preset fills in steps 3 to 5. Change anything afterwards.</span>
+          <span class="hint" id="presetNote">A preset fills in steps 3 to 5. Change anything afterwards.</span>
           <a class="next" href="#step3">Or set it up yourself ↓</a>
         </div>
       </div>
@@ -281,7 +285,6 @@ details.fold>summary:hover{color:var(--blue)}
           <div class="two" data-only="aks">
             <div class="field"><label for="nodesAks">Nodes (whole cluster)</label><input type="number" id="nodesAks" min="1" max="5000" value="20"></div>
           </div>
-          <div class="field" data-only="eks"><label for="vpcMain">VPC CIDR</label><input type="text" id="vpcMain" value="10.0.0.0/16" class="mono" spellcheck="false"><span class="hint">The zone subnets are carved from this block, /16 to /28. The checks say when they do not fit.</span></div>
           <div class="two">
             <div class="field" data-only="gke aks" style="display:flex"><label for="surge">Surge nodes during upgrade</label><input type="number" id="surge" min="0" max="500" value="1"><span class="hint">AKS default max surge is 1 node; GKE default is 1.</span></div>
           </div>
@@ -823,10 +826,10 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 
 // ------------------------------------------------------------ state
 const S = window.S = {
-  cloud: 'eks', tab: 'tf',
+  cloud: 'eks', tab: 'tf', preset: -1,
   eks: { type: 'm5.large', nodesAz: 5, azs: 3, pods: '', prefix: false, custom: false, os: 'linux', fam: 'ipv4', managed: true, cp: 16, svc: '172.20.0.0/16', vpc: '10.0.0.0/16', vpcs: '' },
   gke: { autopilot: false, nodes: 30, pods: 110, svcManaged: true, svcPrefix: 20 },
-  aks: { mode: 'overlay', nodes: 20, pods: '' },
+  aks: { mode: 'overlay', nodes: 20, pods: '', vnet: '10.240.0.0/16' },
   surge: 1, growth: 0,
 };
 const PRESETS = {
@@ -857,10 +860,10 @@ const QUICK = ['t3.medium', 'm5.large', 'm5.xlarge', 'm5.2xlarge', 'm7g.large', 
 // ------------------------------------------------------------ share link
 function saveHash() {
   try {
-    const o = { c: S.cloud, g: S.growth, s: S.surge };
+    const o = { c: S.cloud, g: S.growth, s: S.surge, pr: S.preset };
     if (S.cloud === 'eks') Object.assign(o, { i: S.eks.type, n: S.eks.nodesAz, z: S.eks.azs, q: S.eks.pods, x: S.eks.prefix ? 1 : 0, cn: S.eks.custom ? 1 : 0, os: S.eks.os === 'windows' ? 'w' : 'l', v6: S.eks.fam === 'ipv6' ? 1 : 0, m: S.eks.managed ? 1 : 0, p: S.eks.cp, sc: S.eks.svc, vp: S.eks.vpc, vc: S.eks.vpcs });
     if (S.cloud === 'gke') Object.assign(o, { a: S.gke.autopilot ? 1 : 0, n: S.gke.nodes, q: S.gke.pods, sm: S.gke.svcManaged ? 1 : 0, sp: S.gke.svcPrefix });
-    if (S.cloud === 'aks') Object.assign(o, { k: S.aks.mode, n: S.aks.nodes, q: S.aks.pods });
+    if (S.cloud === 'aks') Object.assign(o, { k: S.aks.mode, n: S.aks.nodes, q: S.aks.pods, vn: S.aks.vnet });
     history.replaceState(null, '', '#' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, ''));
   } catch (e) {}
 }
@@ -869,23 +872,20 @@ function loadHash() {
   let o; try { o = JSON.parse(decodeURIComponent(escape(atob(h)))); } catch (e) { toast('This link is damaged; showing the defaults'); return false; }
   if (!o || typeof o !== 'object') return false;
   S.cloud = ['eks', 'gke', 'aks'].includes(o.c) ? o.c : 'eks';
-  S.growth = +o.g || 0; S.surge = o.s == null ? 1 : +o.s;
+  S.growth = +o.g || 0; S.surge = o.s == null ? 1 : +o.s; S.preset = o.pr == null ? -1 : +o.pr;
   if (S.cloud === 'eks') { if (o.i && E.eksInstance(o.i)) S.eks.type = o.i; S.eks.nodesAz = +o.n || 5; S.eks.azs = +o.z || 3; S.eks.pods = o.q === '' || o.q == null ? '' : +o.q; S.eks.prefix = !!o.x; S.eks.custom = !!o.cn; S.eks.os = o.os === 'w' ? 'windows' : 'linux'; S.eks.fam = o.v6 ? 'ipv6' : 'ipv4'; S.eks.managed = o.m !== 0; S.eks.cp = +o.p === 6 ? 6 : 16; if (o.sc) S.eks.svc = String(o.sc); if (o.vp) S.eks.vpc = String(o.vp); if (o.vc != null) S.eks.vpcs = String(o.vc); }
   if (S.cloud === 'gke') { S.gke.autopilot = !!o.a; S.gke.nodes = +o.n || 30; S.gke.pods = +o.q || 110; S.gke.svcManaged = o.sm !== 0; S.gke.svcPrefix = +o.sp || 20; }
-  if (S.cloud === 'aks') { S.aks.mode = E.AKS_MODES[o.k] ? o.k : 'overlay'; S.aks.nodes = +o.n || 20; S.aks.pods = o.q === '' || o.q == null ? '' : +o.q; }
+  if (S.cloud === 'aks') { S.aks.mode = E.AKS_MODES[o.k] ? o.k : 'overlay'; S.aks.nodes = +o.n || 20; S.aks.pods = o.q === '' || o.q == null ? '' : +o.q; if (o.vn) S.aks.vnet = String(o.vn); }
   return true;
 }
 
 // ------------------------------------------------------------ inputs <-> state
-// The preset whose values steps 3 to 5 currently hold, or -1: the chip stays selected until a value moves away from it.
-function activePreset() {
-  const st = S[S.cloud];
-  return PRESETS[S.cloud].findIndex(p => {
-    if (!Object.keys(p.s).every(k => String(st[k]) === String(p.s[k]))) return false;
-    if (S.cloud !== 'eks') return true;
-    const d = { custom: false, os: 'linux', fam: 'ipv4' };
-    return Object.keys(d).every(k => k in p.s || String(st[k]) === String(d[k]));
-  });
+// Which values of the chosen preset the user has since changed, as "label (current value)" strings.
+const PRESET_LABELS = { type: 'instance type', nodesAz: 'nodes per zone', azs: 'zones', pods: 'pods per node', prefix: 'prefix delegation', custom: 'custom networking', os: 'node OS', fam: 'IP family', autopilot: 'mode', nodes: 'nodes', mode: 'network plugin' };
+function presetDiff() {
+  if (S.preset < 0 || !PRESETS[S.cloud][S.preset]) return [];
+  const st = S[S.cloud], want = Object.assign({}, S.cloud === 'eks' ? { custom: false, os: 'linux', fam: 'ipv4' } : {}, PRESETS[S.cloud][S.preset].s);
+  return Object.keys(want).filter(k => String(st[k]) !== String(want[k])).map(k => PRESET_LABELS[k] + ' (' + (k === 'pods' && st[k] === '' ? 'max' : k === 'autopilot' ? (st[k] ? 'Autopilot' : 'Standard') : typeof st[k] === 'boolean' ? (st[k] ? 'on' : 'off') : st[k]) + ')');
 }
 function pushInputs() {
   document.body.dataset.cloud = S.cloud;
@@ -894,18 +894,21 @@ function pushInputs() {
   $('podsEks').value = S.eks.pods; $('cpIps').value = String(S.eks.cp); $('prefixSw').checked = S.eks.prefix; $('customSw').checked = S.eks.custom; [...$('osSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.eks.os)); [...$('famSeg').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.eks.fam)); $('prefixSw').disabled = S.eks.fam === 'ipv6'; if (S.eks.fam === 'ipv6') { $('prefixSw').checked = true; S.eks.prefix = true; } $('customSw').disabled = S.eks.os === 'windows' || S.eks.fam === 'ipv6'; $('managedSw').checked = S.eks.managed; $('svcCidr').value = S.eks.svc; $('vpcMain').value = S.eks.vpc; $('vpcCidrs').value = S.eks.vpcs; { const c = E.parseCidr(S.eks.vpc); $('vpcMain').classList.toggle('bad', !c || c.prefix > 28 || c.prefix < 8); }
   [...$('gkeMode').children].forEach(b => b.classList.toggle('on', (b.dataset.v === 'autopilot') === S.gke.autopilot));
   $('nodesGke').value = S.gke.nodes; $('podsGke').value = S.gke.pods; $('podsGke').disabled = S.gke.autopilot; $('svcManaged').checked = S.gke.svcManaged; $('svcPrefix').value = String(S.gke.svcPrefix); $('svcPrefixField').style.display = (S.cloud === 'gke' && !S.gke.svcManaged) ? 'flex' : 'none';
-  $('aksMode').value = S.aks.mode; $('nodesAks').value = S.aks.nodes; $('podsAks').value = S.aks.pods; $('aksPodsHint').textContent = 'Blank = plugin default (' + E.AKS_MODES[S.aks.mode].defaultMaxPods + '); range 10 to 250';
+  $('aksMode').value = S.aks.mode; $('vnetMain').value = S.aks.vnet; { const c = E.parseCidr(S.aks.vnet); $('vnetMain').classList.toggle('bad', !c || c.prefix > 29 || c.prefix < 8); } $('nodesAks').value = S.aks.nodes; $('podsAks').value = S.aks.pods; $('aksPodsHint').textContent = 'Blank = plugin default (' + E.AKS_MODES[S.aks.mode].defaultMaxPods + '); range 10 to 250';
   $('surge').value = S.surge; $('growth').value = S.growth;
   stepLabels();
   const pr = $('presets'); pr.innerHTML = PRESETS[S.cloud].map((p, i) => '<button class="chip" data-preset="' + S.cloud + '-' + i + '">' + esc(p.l) + '</button>').join('');
-  const ap = activePreset(); pr.querySelectorAll('button').forEach((b, i) => { b.classList.toggle('on', i === ap); b.onclick = () => { Object.assign(S[S.cloud], S.cloud === 'eks' ? { custom: false, os: 'linux', fam: 'ipv4' } : {}, PRESETS[S.cloud][i].s); pushInputs(); update(); }; });
+  if (S.preset >= PRESETS[S.cloud].length) S.preset = -1;
+  const diff = presetDiff();
+  pr.querySelectorAll('button').forEach((b, i) => { b.classList.toggle('on', i === S.preset); b.classList.toggle('edited', i === S.preset && diff.length > 0); b.onclick = () => { S.preset = i; Object.assign(S[S.cloud], S.cloud === 'eks' ? { custom: false, os: 'linux', fam: 'ipv4' } : {}, PRESETS[S.cloud][i].s); pushInputs(); update(); }; });
+  $('presetNote').textContent = S.preset < 0 ? 'A preset fills in steps 3 to 5. Change anything afterwards.' : diff.length ? 'Started from "' + PRESETS[S.cloud][S.preset].l + '"; you changed ' + diff.join(', ') + '. Click the case again to reset it.' : '"' + PRESETS[S.cloud][S.preset].l + '" is applied. Change anything in steps 3 to 5; it stays your starting point.';
   if (S.cloud === 'eks') [...$('instQuick').children].forEach(b => b.classList.toggle('on', b.dataset.v === S.eks.type));
 }
 function pullInputs() {
   const n = (id, d) => { const v = $(id).value.trim(); return v === '' ? d : Math.max(0, +v); };
   S.eks.type = $('inst').value.trim().toLowerCase(); S.eks.nodesAz = n('nodesAz', 1) || 1; S.eks.pods = $('podsEks').value.trim() === '' ? '' : Math.max(1, +$('podsEks').value); S.eks.cp = +$('cpIps').value; S.eks.prefix = $('prefixSw').checked; S.eks.custom = $('customSw').checked; S.eks.managed = $('managedSw').checked; S.eks.svc = $('svcCidr').value.trim(); S.eks.vpc = $('vpcMain').value.trim(); S.eks.vpcs = $('vpcCidrs').value;
   S.gke.nodes = n('nodesGke', 1) || 1; S.gke.pods = n('podsGke', 110) || 110; S.gke.svcManaged = $('svcManaged').checked; S.gke.svcPrefix = +$('svcPrefix').value;
-  S.aks.mode = $('aksMode').value; S.aks.nodes = n('nodesAks', 1) || 1; S.aks.pods = $('podsAks').value.trim() === '' ? '' : +$('podsAks').value;
+  S.aks.mode = $('aksMode').value; S.aks.vnet = $('vnetMain').value.trim(); S.aks.nodes = n('nodesAks', 1) || 1; S.aks.pods = $('podsAks').value.trim() === '' ? '' : +$('podsAks').value;
   S.surge = n('surge', 1); S.growth = n('growth', 0);
 }
 
@@ -915,6 +918,19 @@ let R = null;
 function vpcCidr() { const c = E.parseCidr(S.eks.vpc); return c && c.prefix >= 8 && c.prefix <= 28 ? c : E.parseCidr('10.0.0.0/16'); }
 function vpcNeed(r) { return r.azs * Math.pow(2, 32 - r.perZone.prefix); }
 function vpcFits(r) { return vpcNeed(r) <= vpcCidr().size; }
+// zone z's subnet, carved in order from the VPC when the subnets fit; otherwise just the prefix
+function zoneCidr(r, z) { const v = vpcCidr(), p = r.perZone.prefix; if (!vpcFits(r)) return '/' + p; return E.n2ip(E.ip2n(v.cidr.split('/')[0]) + z * Math.pow(2, 32 - p)) + '/' + p; }
+// AKS: node subnet at the start of the VNet, pod subnet (Pod Subnet mode) right after it, aligned to its own size
+function vnetCidr() { const c = E.parseCidr(S.aks.vnet); return c && c.prefix >= 8 && c.prefix <= 29 ? c : E.parseCidr('10.240.0.0/16'); }
+function aksLayout(r) {
+  const v = vnetCidr(), b = E.ip2n(v.cidr.split('/')[0]), end = b + v.size;
+  const ns = Math.pow(2, 32 - r.nodeSubnet.prefix);
+  let fits = b + ns <= end, pod = null, podBase = null;
+  if (r.mode === 'podsubnet') { const psz = Math.pow(2, 32 - r.podSpace.prefix); podBase = Math.ceil((b + ns) / psz) * psz; fits = fits && podBase + psz <= end; pod = E.n2ip(podBase) + '/' + r.podSpace.prefix; }
+  const need = ns + (r.mode === 'podsubnet' ? Math.pow(2, 32 - r.podSpace.prefix) : 0);
+  return { fits, need, vnet: v, node: fits ? E.n2ip(b) + '/' + r.nodeSubnet.prefix : '10.240.0.0/' + r.nodeSubnet.prefix, pod: fits ? pod : (r.mode === 'podsubnet' ? '10.241.0.0/' + r.podSpace.prefix : null) };
+}
+const zoneCode = (r, z) => vpcFits(r) ? ' <code>' + zoneCidr(r, z) + '</code>' : '';
 function compute() {
   if (S.cloud === 'eks') return E.eksPlan({ type: S.eks.type, nodesPerAz: S.eks.nodesAz, azs: S.eks.azs, podsPerNode: S.eks.pods, prefixDelegation: S.eks.prefix, customNetworking: S.eks.custom && S.eks.os !== 'windows' && S.eks.fam !== 'ipv6', os: S.eks.os, ipFamily: S.eks.fam, managed: S.eks.managed, growthPct: S.growth, controlPlaneIps: S.eks.cp });
   if (S.cloud === 'gke') return E.gkePlan({ autopilot: S.gke.autopilot, nodes: S.gke.nodes, podsPerNode: S.gke.pods, surge: S.surge, growthPct: S.growth, servicesManaged: S.gke.svcManaged, servicesPrefix: S.gke.svcPrefix });
@@ -963,7 +979,7 @@ function renderEks(r) {
     : 'max pods   = ' + i.enis + ' ENIs × (' + i.ipsPerEni + ' − 1) + 2 = ' + mp.eniFormula + (mp.rule === 'cap' ? ' → capped at ' + mp.cap : '') + '\nper node   = ' + per.enisUsed + ' ENIs attached (' + (per.enisUsed - 1) + ' for pods + 1 warm) × ' + i.ipsPerEni + ' = ' + per.ips) +
     '\nper zone   = ' + r.nodesPlanned + ' nodes × ' + per.ips + ' + ' + cp + ' control plane = ' + fmt(r.perZone.need) + ' → /' + r.perZone.prefix + ' (' + fmt(r.perZone.usable) + ' usable after the 5 AWS reserves)';
   const rows = [];
-  for (let z = 0; z < r.azs; z++) rows.push(['zone ' + String.fromCharCode(97 + z), '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), fmt(per.ips), fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]);
+  for (let z = 0; z < r.azs; z++) rows.push(['zone ' + String.fromCharCode(97 + z) + zoneCode(r, z), '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), fmt(per.ips), fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]);
   rows.push(['worst case', '/' + r.perZone.prefixWorst, fmt(r.nodesPlanned), fmt(per.worst), fmt(r.perZone.needWorst), '', 'every ENI slot allocated']);
   rangesTable(['Subnet', 'Prefix', 'Nodes', 'Per node', 'Needed', 'Usable', 'Headroom'], rows);
 }
@@ -993,7 +1009,7 @@ function renderEksIpv6(r) {
   $('barNote').textContent = 'IPv4 subnet /' + r.perZone.prefix + ', one zone; Pods are not in it';
   $('formula').textContent = 'max pods    = min(cap ' + mp.cap + ', (' + i.enis + ' ENIs × (' + i.ipsPerEni + ' − 1) slots × 16) + 2 = ' + fmt(mp.prefixFormula) + ') = ' + mp.maxPods + '   (limit is CPU and memory, not addresses)\nIPv4 subnet = ' + r.nodesPlanned + ' nodes × 1 + ' + cp + ' control plane = ' + fmt(r.perZone.need) + ' → /' + r.perZone.prefix + '\nIPv6        = VPC /56 → one /64 per subnet → one /80 per node (' + fmt(r.ipv6Plan.nodesPerSubnet) + ' nodes per /64)';
   const rows = [];
-  for (let z = 0; z < r.azs; z++) { const az = String.fromCharCode(97 + z); rows.push(['zone ' + az + ' IPv4 (nodes)', '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), '1', fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]); rows.push(['zone ' + az + ' IPv6 (Pods)', '<b>/64</b>', fmt(r.nodesPlanned), '/80', fmt(r.nodesPlanned) + ' prefixes', fmt(r.ipv6Plan.nodesPerSubnet) + ' prefixes', '']); }
+  for (let z = 0; z < r.azs; z++) { const az = String.fromCharCode(97 + z); rows.push(['zone ' + az + ' IPv4 (nodes)' + zoneCode(r, z), '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), '1', fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]); rows.push(['zone ' + az + ' IPv6 (Pods)', '<b>/64</b>', fmt(r.nodesPlanned), '/80', fmt(r.nodesPlanned) + ' prefixes', fmt(r.ipv6Plan.nodesPerSubnet) + ' prefixes', '']); }
   rangesTable(['Subnet', 'Prefix', 'Nodes', 'Per node', 'Needed', 'Usable', 'Headroom'], rows);
 }
 function renderEksCustom(r) {
@@ -1020,7 +1036,7 @@ function renderEksCustom(r) {
   const rows = [];
   for (let z = 0; z < r.azs; z++) {
     const az = String.fromCharCode(97 + z);
-    rows.push(['zone ' + az + ' nodes', '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), '1', fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]);
+    rows.push(['zone ' + az + ' nodes' + zoneCode(r, z), '<b>/' + r.perZone.prefix + '</b>', fmt(r.nodesPlanned), '1', fmt(r.perZone.need), fmt(r.perZone.usable), fmt(r.perZone.usable - r.perZone.need)]);
     rows.push(['zone ' + az + ' pods <code>' + podSubnetCidr(z) + '</code>', '<b>/' + pz.prefix + '</b>', fmt(r.nodesPlanned), fmt(per.podIps), fmt(pz.need), fmt(pz.usable), fmt(pz.usable - pz.need)]);
   }
   rows.push(['secondary CIDR', podCidrs().map(c => '<code>' + c + '</code>').join(' '), '', '', '', '', 'counts toward 5 CIDR blocks per VPC']);
@@ -1107,19 +1123,19 @@ function renderAks(r) {
     segs = barSeg('nodes', nodes, total, 'node addresses') + barSeg('pods', pods, total, 'pod addresses, pre-assigned') + barSeg('free', total - nodes - pods, total, 'free');
     leg = [['nodes', 'nodes ' + fmt(nodes)], ['pods', 'pods ' + fmt(pods)], ['free', 'free ' + fmt(total - nodes - pods) + ' of ' + fmt(total)]];
     $('barNote').textContent = 'node subnet /' + r.nodeSubnet.prefix;
-    rows = [['node subnet (nodes + pods)', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), '(' + r.nodesPlanned + ') + (' + r.nodesPlanned + ' × ' + r.maxPods + ')']];
+    rows = [['node subnet (nodes + pods) <code>' + aksLayout(r).node + '</code>', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), '(' + r.nodesPlanned + ') + (' + r.nodesPlanned + ' × ' + r.maxPods + ')']];
   } else if (r.mode === 'podsubnet') {
     total = ps.usable; const used = ps.need, pods = r.nodesPlanned * r.maxPods;
     segs = barSeg('pods', pods, total, 'pods') + barSeg('warm', used - pods, total, 'batch rounding and spare batch') + barSeg('free', total - used, total, 'free');
     leg = [['pods', 'pods ' + fmt(pods)], ['warm', 'batch headroom ' + fmt(used - pods)], ['free', 'free ' + fmt(total - used) + ' of ' + fmt(total)]];
     $('barNote').textContent = 'pod subnet /' + ps.prefix;
-    rows = [['node subnet', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), 'one address per node'], ['pod subnet', '<b>/' + ps.prefix + '</b>', fmt(ps.need), fmt(ps.usable), r.nodesPlanned + ' nodes × ' + ps.perNode + ' (batches of 16 + one spare batch)']];
+    rows = [['node subnet <code>' + aksLayout(r).node + '</code>', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), 'one address per node'], ['pod subnet <code>' + aksLayout(r).pod + '</code>', '<b>/' + ps.prefix + '</b>', fmt(ps.need), fmt(ps.usable), r.nodesPlanned + ' nodes × ' + ps.perNode + ' (batches of 16 + one spare batch)']];
   } else {
     total = ps.maxNodes * 256; const used = r.nodesPlanned * 256, pods = r.nodesPlanned * r.maxPods;
     segs = barSeg('pods', pods, total, 'pods') + barSeg('warm', used - pods, total, 'unused in node /24s') + barSeg('free', total - used, total, 'free node slots');
     leg = [['pods', 'pods ' + fmt(pods)], ['warm', 'unused in node /24s ' + fmt(used - pods)], ['free', 'free ' + fmt(total - used) + ' of ' + fmt(total)]];
     $('barNote').textContent = 'pod CIDR /' + ps.prefix + ' (private, outside the VNet)';
-    rows = [['node subnet (VNet)', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), 'one address per node'], ['pod CIDR (not VNet space)', '<b>/' + ps.prefix + '</b>', fmt(used), fmt(total), 'a /24 per node; default 10.244.0.0/16 holds 256 nodes']];
+    rows = [['node subnet (VNet) <code>' + aksLayout(r).node + '</code>', '<b>/' + r.nodeSubnet.prefix + '</b>', fmt(r.nodeSubnet.need), fmt(r.nodeSubnet.usable), 'one address per node'], ['pod CIDR (not VNet space)', '<b>/' + ps.prefix + '</b>', fmt(used), fmt(total), 'a /24 per node; default 10.244.0.0/16 holds 256 nodes']];
   }
   $('bar').innerHTML = segs; legend(leg);
   $('formula').textContent = (r.mode === 'nodesubnet' ? 'VNet addresses = (' + r.nodes + ' nodes + ' + (r.nodesPlanned - r.nodes) + ' surge/growth) + (' + r.nodesPlanned + ' × ' + r.maxPods + ' maxPods) = ' + fmt(r.nodeSubnet.need)
@@ -1136,6 +1152,13 @@ function renderChecks(r) {
     items.unshift(need > v.size
       ? { k: 'bad', t: r.azs + ' × /' + r.perZone.prefix + ' do not fit in ' + v.cidr, d: 'The zone subnets need ' + fmt(need) + ' addresses and the VPC has ' + fmt(v.size) + '. Use a /' + Math.max(16, 32 - Math.ceil(Math.log2(need))) + ' or larger VPC, add a secondary CIDR block, turn on prefix delegation, or reduce nodes per zone.', src: 'vpcCidrQuota' }
       : { k: pct > 75 ? 'warn' : 'info', t: 'zone subnets take ' + pct + '% of ' + v.cidr, d: fmt(need) + ' of ' + fmt(v.size) + ' addresses go to the ' + r.azs + ' node subnets' + (r.custom ? ' (pod subnets come from the secondary block)' : '') + '; ' + fmt(v.size - need) + ' stay free for public subnets, load balancers and databases.' });
+  }
+  if (S.cloud === 'aks') {
+    const L = aksLayout(r), pct = Math.round(L.need / L.vnet.size * 100);
+    if (!E.parseCidr(S.aks.vnet)) items.unshift({ k: 'warn', t: 'VNet address space is not valid, using 10.240.0.0/16', d: 'Type it as address/prefix, for example 10.50.0.0/20.' });
+    items.unshift(!L.fits
+      ? { k: 'bad', t: 'the subnets do not fit in ' + L.vnet.cidr, d: 'The node subnet /' + r.nodeSubnet.prefix + (r.mode === 'podsubnet' ? ' and pod subnet /' + r.podSpace.prefix : '') + ' need ' + fmt(L.need) + ' addresses and the VNet has ' + fmt(L.vnet.size) + '. Use a /' + Math.max(8, 32 - Math.ceil(Math.log2(L.need * (r.mode === 'podsubnet' ? 2 : 1)))) + ' or larger address space, or switch to Azure CNI Overlay, which keeps pods out of the VNet.' }
+      : { k: pct > 75 ? 'warn' : 'info', t: 'AKS subnets take ' + pct + '% of ' + L.vnet.cidr, d: fmt(L.need) + ' of ' + fmt(L.vnet.size) + ' addresses go to the node subnet' + (r.mode === 'podsubnet' ? ' and pod subnet' : '') + '; the rest stays free for the ingress subnet, private endpoints and databases.' });
   }
   if (!items.some(i => i.k === 'bad')) items.unshift({ k: 'ok', t: 'nothing blocks this plan', d: 'The sizes above satisfy the rules the cloud documents. Review the informational items before you create the ranges.' });
   const nb = items.filter(i => i.k === 'bad').length, nw = items.filter(i => i.k === 'warn').length;
@@ -1171,7 +1194,8 @@ function plannerHash() {
   const t = [['aks-nodes', 'private', 'prefix', R.nodeSubnet.prefix]];
   if (R.mode === 'podsubnet') t.push(['aks-pods', 'private', 'prefix', R.podSpace.prefix]);
   const small = Math.min.apply(null, t.map(x => x[3]));
-  return enc({ c: 'azure', a: '10.0.0.0', p: Math.max(8, small - 1), z: 1, f: 0, k: 1, g: 0, e: '', t, r: 1, s: 6, v: 'x' });
+  const L = aksLayout(R);
+  return enc({ c: 'azure', a: L.fits ? L.vnet.cidr.split('/')[0] : '10.0.0.0', p: L.fits ? L.vnet.prefix : Math.max(8, small - 1), z: 1, f: 0, k: 1, g: 0, e: '', t, r: 1, s: 6, v: 'x' });
 }
 
 // ------------------------------------------------------------ exports
@@ -1207,11 +1231,11 @@ function cliGke() {
 }
 function tfAks() {
   const r = R, ps = r.podSpace;
-  return hdr('#') + '# ' + r.modeLabel + ': ' + fmt(r.nodesPlanned) + ' nodes x ' + r.maxPods + ' pods; node subnet /' + r.nodeSubnet.prefix + (ps ? (ps.kind.startsWith('pod subnet') ? ', pod subnet /' + ps.prefix : ', pod CIDR /' + ps.prefix) : '') + '\n\nresource "azurerm_subnet" "nodes" {\n  name                 = "aks-nodes"\n  resource_group_name  = azurerm_resource_group.rg.name\n  virtual_network_name = azurerm_virtual_network.vnet.name\n  address_prefixes     = ["10.240.0.0/' + r.nodeSubnet.prefix + '"]   # ' + fmt(r.nodeSubnet.usable) + ' usable for ' + fmt(r.nodeSubnet.need) + '\n}\n' + (r.mode === 'podsubnet' ? '\nresource "azurerm_subnet" "pods" {\n  name                 = "aks-pods"\n  resource_group_name  = azurerm_resource_group.rg.name\n  virtual_network_name = azurerm_virtual_network.vnet.name\n  address_prefixes     = ["10.241.0.0/' + ps.prefix + '"]   # ' + fmt(ps.usable) + ' usable for ' + fmt(ps.need) + '\n  delegation {\n    name = "aks"\n    service_delegation {\n      name    = "Microsoft.ContainerService/managedClusters"\n      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]\n    }\n  }\n}\n' : '') + '\nresource "azurerm_kubernetes_cluster" "this" {\n  name                = "demo"\n  location            = azurerm_resource_group.rg.location\n  resource_group_name = azurerm_resource_group.rg.name\n  dns_prefix          = "demo"\n\n  default_node_pool {\n    name           = "system"\n    vm_size        = "Standard_D4s_v5"\n    node_count     = ' + r.nodes + '\n    max_pods       = ' + r.maxPods + '\n    vnet_subnet_id = azurerm_subnet.nodes.id\n' + (r.mode === 'podsubnet' ? '    pod_subnet_id  = azurerm_subnet.pods.id\n' : '') + '    upgrade_settings {\n      max_surge = "' + r.surge + '"\n    }\n  }\n\n  network_profile {\n    network_plugin = "' + (r.mode === 'kubenet' ? 'kubenet' : 'azure') + '"\n' + (r.mode === 'overlay' ? '    network_plugin_mode = "overlay"\n    pod_cidr            = "10.244.0.0/' + ps.prefix + '"\n' : r.mode === 'kubenet' ? '    pod_cidr       = "10.244.0.0/' + ps.prefix + '"\n' : '') + '    service_cidr   = "10.0.0.0/16"   # must not overlap the VNet\n    dns_service_ip = "10.0.0.10"\n  }\n\n  identity { type = "SystemAssigned" }\n  node_provisioning_profile { mode = "Manual" }   # required by azurerm 5.x\n}\n';
+  return hdr('#') + '# ' + r.modeLabel + ': ' + fmt(r.nodesPlanned) + ' nodes x ' + r.maxPods + ' pods; node subnet /' + r.nodeSubnet.prefix + (ps ? (ps.kind.startsWith('pod subnet') ? ', pod subnet /' + ps.prefix : ', pod CIDR /' + ps.prefix) : '') + '\n\nresource "azurerm_subnet" "nodes" {\n  name                 = "aks-nodes"\n  resource_group_name  = azurerm_resource_group.rg.name\n  virtual_network_name = azurerm_virtual_network.vnet.name\n  address_prefixes     = ["' + aksLayout(r).node + '"]   # ' + fmt(r.nodeSubnet.usable) + ' usable for ' + fmt(r.nodeSubnet.need) + '\n}\n' + (r.mode === 'podsubnet' ? '\nresource "azurerm_subnet" "pods" {\n  name                 = "aks-pods"\n  resource_group_name  = azurerm_resource_group.rg.name\n  virtual_network_name = azurerm_virtual_network.vnet.name\n  address_prefixes     = ["' + aksLayout(r).pod + '"]   # ' + fmt(ps.usable) + ' usable for ' + fmt(ps.need) + '\n  delegation {\n    name = "aks"\n    service_delegation {\n      name    = "Microsoft.ContainerService/managedClusters"\n      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]\n    }\n  }\n}\n' : '') + '\nresource "azurerm_kubernetes_cluster" "this" {\n  name                = "demo"\n  location            = azurerm_resource_group.rg.location\n  resource_group_name = azurerm_resource_group.rg.name\n  dns_prefix          = "demo"\n\n  default_node_pool {\n    name           = "system"\n    vm_size        = "Standard_D4s_v5"\n    node_count     = ' + r.nodes + '\n    max_pods       = ' + r.maxPods + '\n    vnet_subnet_id = azurerm_subnet.nodes.id\n' + (r.mode === 'podsubnet' ? '    pod_subnet_id  = azurerm_subnet.pods.id\n' : '') + '    upgrade_settings {\n      max_surge = "' + r.surge + '"\n    }\n  }\n\n  network_profile {\n    network_plugin = "' + (r.mode === 'kubenet' ? 'kubenet' : 'azure') + '"\n' + (r.mode === 'overlay' ? '    network_plugin_mode = "overlay"\n    pod_cidr            = "10.244.0.0/' + ps.prefix + '"\n' : r.mode === 'kubenet' ? '    pod_cidr       = "10.244.0.0/' + ps.prefix + '"\n' : '') + '    service_cidr   = "10.0.0.0/16"   # must not overlap the VNet\n    dns_service_ip = "10.0.0.10"\n  }\n\n  identity { type = "SystemAssigned" }\n  node_provisioning_profile { mode = "Manual" }   # required by azurerm 5.x\n}\n';
 }
 function cliAks() {
   const r = R, ps = r.podSpace;
-  return hdr('#') + 'az network vnet subnet create -g rg --vnet-name vnet -n aks-nodes --address-prefixes 10.240.0.0/' + r.nodeSubnet.prefix + '\n' + (r.mode === 'podsubnet' ? 'az network vnet subnet create -g rg --vnet-name vnet -n aks-pods  --address-prefixes 10.241.0.0/' + ps.prefix + '\n' : '') + '\naz aks create -g rg -n demo \\\n  --node-count ' + r.nodes + ' --max-pods ' + r.maxPods + ' --max-surge ' + r.surge + ' \\\n  --vnet-subnet-id /subscriptions/<sub>/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet/subnets/aks-nodes \\\n' + (r.mode === 'overlay' ? '  --network-plugin azure --network-plugin-mode overlay --pod-cidr 10.244.0.0/' + ps.prefix + ' \\\n' : r.mode === 'podsubnet' ? '  --network-plugin azure --pod-subnet-id /subscriptions/<sub>/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet/subnets/aks-pods \\\n' : r.mode === 'kubenet' ? '  --network-plugin kubenet --pod-cidr 10.244.0.0/' + ps.prefix + ' \\\n' : '  --network-plugin azure \\\n') + '  --service-cidr 10.0.0.0/16 --dns-service-ip 10.0.0.10\n\n# Count what the subnet has left:\n# az network vnet subnet show -g rg --vnet-name vnet -n aks-nodes --query "ipConfigurations | length(@)"\n';
+  return hdr('#') + 'az network vnet subnet create -g rg --vnet-name vnet -n aks-nodes --address-prefixes ' + aksLayout(r).node + '\n' + (r.mode === 'podsubnet' ? 'az network vnet subnet create -g rg --vnet-name vnet -n aks-pods  --address-prefixes ' + aksLayout(r).pod + '\n' : '') + '\naz aks create -g rg -n demo \\\n  --node-count ' + r.nodes + ' --max-pods ' + r.maxPods + ' --max-surge ' + r.surge + ' \\\n  --vnet-subnet-id /subscriptions/<sub>/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet/subnets/aks-nodes \\\n' + (r.mode === 'overlay' ? '  --network-plugin azure --network-plugin-mode overlay --pod-cidr 10.244.0.0/' + ps.prefix + ' \\\n' : r.mode === 'podsubnet' ? '  --network-plugin azure --pod-subnet-id /subscriptions/<sub>/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet/subnets/aks-pods \\\n' : r.mode === 'kubenet' ? '  --network-plugin kubenet --pod-cidr 10.244.0.0/' + ps.prefix + ' \\\n' : '  --network-plugin azure \\\n') + '  --service-cidr 10.0.0.0/16 --dns-service-ip 10.0.0.10\n\n# Count what the subnet has left:\n# az network vnet subnet show -g rg --vnet-name vnet -n aks-nodes --query "ipConfigurations | length(@)"\n';
 }
 function md() {
   const r = R;
@@ -1313,9 +1337,9 @@ function dgEks(r) {
   for (let z = 0; z < azs; z++) {
     const zx = inner + z * (zoneW + 10), az = String.fromCharCode(97 + z);
     let y = zy + 46;
-    let zs = T_(zx + 10, zy + 19, 'Zone ' + az, 't1') + T_(zx + 10, zy + 34, (r.custom ? 'node subnet /' + r.perZone.prefix + '  ·  pod subnet /' + r.podZone.prefix : r.ipv6 ? 'IPv4 /' + r.perZone.prefix + ' for nodes  ·  IPv6 /64 for Pods' : 'subnet /' + r.perZone.prefix + '  ·  ' + fmt(r.perZone.usable) + ' usable'), 't2');
+    let zs = T_(zx + 10, zy + 19, 'Zone ' + az, 't1') + T_(zx + 10, zy + 34, (r.custom ? 'node subnet ' + zoneCidr(r, z) + '  ·  pod subnet /' + r.podZone.prefix : r.ipv6 ? 'IPv4 ' + zoneCidr(r, z) + ' for nodes  ·  IPv6 /64 for Pods' : 'subnet ' + zoneCidr(r, z) + '  ·  ' + fmt(r.perZone.usable) + ' usable'), 't2');
     if (r.custom) {
-      zs += R_(zx + 10, y, zoneW - 20, lane - 6, 'lane', 8) + T_(zx + 18, y + 14, 'node subnet /' + r.perZone.prefix + ': ' + fmt(r.nodesPlanned) + ' × 1 address', 't2');
+      zs += R_(zx + 10, y, zoneW - 20, lane - 6, 'lane', 8) + T_(zx + 18, y + 14, 'node subnet ' + zoneCidr(r, z) + ': ' + fmt(r.nodesPlanned) + ' × 1 address', 't2');
       const g = cellGrid(zx + 18, y + 20, zoneW - 36 - 150, r.nodesPlanned, 9, 9, 3, 2, (x, yy) => R_(x, yy, 9, 9, 'ip-node', 2, 'node primary ENI, one address'));
       zs += g.s;
       const ct = 'control plane ' + cp, cw = Math.round(ct.length * 6.2 + 14); zs += chip(zx + zoneW - 18 - cw, y + 20, ct, 'ip-cp').s;
@@ -1364,21 +1388,21 @@ function dgAks(r) {
   let y = 44, s = '';
   if (r.mode === 'nodesubnet') {
     const bw = 72, bh = 20, nf = 1 / (1 + r.maxPods);
-    s += T_(22, y + 14, 'Node subnet /' + r.nodeSubnet.prefix + ': every node takes 1 + ' + r.maxPods + ' addresses up front (' + fmt(r.nodeSubnet.need) + ' of ' + fmt(r.nodeSubnet.usable) + ' usable)', 't2');
+    s += T_(22, y + 14, 'Node subnet ' + aksLayout(r).node + ': every node takes 1 + ' + r.maxPods + ' addresses up front (' + fmt(r.nodeSubnet.need) + ' of ' + fmt(r.nodeSubnet.usable) + ' usable)', 't2');
     const g = cellGrid(22, y + 22, lw, n, bw, bh, 5, 3, (x, yy, k) => R_(x, yy, bw, bh, 'ip-pod', 3, 'node ' + (k + 1) + ': 1 node address + ' + r.maxPods + ' pre-assigned pod addresses') + R_(x, yy, Math.max(4, bw * nf), bh, k >= r.nodes ? 'ip-surge' : 'ip-node', 3) + T_(x + bw / 2 + 2, yy + 14, '1+' + r.maxPods, 'tw', 'middle'));
     s += g.s; y += 30 + g.h + 10;
   } else {
-    s += T_(22, y + 14, 'Node subnet /' + r.nodeSubnet.prefix + ': one VNet address per node (' + fmt(n) + ' incl. ' + r.surge + ' surge, ' + fmt(r.nodeSubnet.usable) + ' usable, 5 reserved)', 't2');
+    s += T_(22, y + 14, 'Node subnet ' + aksLayout(r).node + ': one VNet address per node (' + fmt(n) + ' incl. ' + r.surge + ' surge, ' + fmt(r.nodeSubnet.usable) + ' usable, 5 reserved)', 't2');
     const g1 = cellGrid(22, y + 22, lw, n, 10, 10, 3, 2, (x, yy, k) => R_(x, yy, 10, 10, k >= r.nodes ? 'ip-surge' : 'ip-node', 2, k >= r.nodes ? 'surge node during upgrades' : 'node address'));
     s += g1.s; y += 30 + g1.h + 14;
     if (r.mode === 'podsubnet') {
       const bw = 64, bh = 20, frac = r.maxPods / ps.perNode;
-      s += T_(22, y + 14, 'Pod subnet /' + ps.prefix + ' (VNet): ' + ps.perNode + ' addresses per node in batches of 16 (' + fmt(ps.need) + ' of ' + fmt(ps.usable) + ' usable)', 't2');
+      s += T_(22, y + 14, 'Pod subnet ' + aksLayout(r).pod + ' (VNet): ' + ps.perNode + ' addresses per node in batches of 16 (' + fmt(ps.need) + ' of ' + fmt(ps.usable) + ' usable)', 't2');
       const g2 = cellGrid(22, y + 22, lw, n, bw, bh, 5, 3, (x, yy, k) => R_(x, yy, bw, bh, 'ip-free', 3, 'node ' + (k + 1) + ': ' + r.maxPods + ' pods in ' + ps.perNode + ' batched addresses') + R_(x, yy, Math.max(2, bw * frac), bh, 'ip-pod', 3) + T_(x + bw / 2, yy + 14, ps.perNode + '', 'tw', 'middle'));
       s += g2.s; y += 30 + g2.h + 10;
     }
   }
-  let out = R_(10, 8, DW - 20, y - 8, 'lane', 12) + T_(22, 28, 'VNet  ·  ' + r.modeLabel + '  ·  ' + fmt(n) + ' nodes × ' + r.maxPods + ' pods = ' + fmt(r.totals.pods) + ' pods', 't1') + s;
+  let out = R_(10, 8, DW - 20, y - 8, 'lane', 12) + T_(22, 28, 'VNet ' + vnetCidr().cidr + (aksLayout(r).fits ? '' : '  (too small, see Checks)') + '  ·  ' + r.modeLabel + '  ·  ' + fmt(n) + ' nodes × ' + r.maxPods + ' pods = ' + fmt(r.totals.pods) + ' pods', 't1') + s;
   let sy = y + 10;
   if (r.mode === 'overlay' || r.mode === 'kubenet') {
     const bw = 56, bh = 18, frac = r.maxPods / 256;
@@ -1401,7 +1425,7 @@ function guide(n) { if (n >= 5 && guided) { guided = false; const a = $('answer'
 function touch(k) { if (!guided) return; if (k + 1 > cur) { cur = k + 1; guide(cur); } }
 function stepLabels() {
   $('s3h').textContent = { eks: 'Instance type', gke: 'Cluster mode', aks: 'Network plugin' }[S.cloud];
-  $('s4h').textContent = S.cloud === 'eks' ? 'Nodes, zones and VPC' : 'How many nodes?';
+  $('s4h').textContent = S.cloud === 'eks' ? 'Nodes and zones' : 'How many nodes?';
   $('s5h').textContent = S.cloud === 'eks' ? 'Pods per node' : S.cloud === 'gke' ? 'Pods and Services' : 'Pods per node';
   const on = [];
   if (S.cloud === 'eks') { if (S.eks.custom) on.push('custom networking'); if (S.eks.os === 'windows') on.push('Windows'); if (S.eks.fam === 'ipv6') on.push('IPv6'); if (!S.eks.managed) on.push('self-managed nodes'); }
@@ -1426,13 +1450,13 @@ function init() {
   $('instList').innerHTML = E.eksInstanceTypes().map(t => '<option value="' + t + '">').join('');
   $('instQuick').innerHTML = QUICK.map(t => '<button class="chip" data-v="' + t + '">' + t + '</button>').join('');
   $('instQuick').querySelectorAll('button').forEach(b => b.onclick = () => { S.eks.type = b.dataset.v; pushInputs(); update(); });
-  [...$('cloudSeg').children].forEach(b => b.onclick = () => { S.cloud = b.dataset.v; pushInputs(); update(); });
+  [...$('cloudSeg').children].forEach(b => b.onclick = () => { if (S.cloud !== b.dataset.v) S.preset = -1; S.cloud = b.dataset.v; pushInputs(); update(); });
   [...$('azSeg').children].forEach(b => b.onclick = () => { S.eks.azs = +b.dataset.v; pushInputs(); update(); });
   [...$('gkeMode').children].forEach(b => b.onclick = () => { S.gke.autopilot = b.dataset.v === 'autopilot'; pushInputs(); update(); });
   [...$('osSeg').children].forEach(b => b.onclick = () => { S.eks.os = b.dataset.v; pushInputs(); update(); });
   [...$('famSeg').children].forEach(b => b.onclick = () => { S.eks.fam = b.dataset.v; pushInputs(); update(); });
   [...$('tabs').children].forEach(b => b.onclick = () => { S.tab = b.dataset.v; renderCode(); });
-  ['inst', 'nodesAz', 'podsEks', 'cpIps', 'prefixSw', 'customSw', 'managedSw', 'svcCidr', 'vpcMain', 'vpcCidrs', 'nodesGke', 'podsGke', 'svcManaged', 'svcPrefix', 'aksMode', 'nodesAks', 'podsAks', 'surge', 'growth'].forEach(id => { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
+  ['inst', 'nodesAz', 'podsEks', 'cpIps', 'prefixSw', 'customSw', 'managedSw', 'svcCidr', 'vpcMain', 'vnetMain', 'vpcCidrs', 'nodesGke', 'podsGke', 'svcManaged', 'svcPrefix', 'aksMode', 'nodesAks', 'podsAks', 'surge', 'growth'].forEach(id => { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
   $('copyCode').onclick = () => navigator.clipboard.writeText($('code').textContent).then(() => toast('Copied'));
   $('shareBtn').onclick = () => { saveHash(); navigator.clipboard.writeText(location.href).then(() => toast('Link copied - it reproduces this calculation')); };
   $('printBtn').onclick = () => window.print();
