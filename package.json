@@ -1,6 +1,6 @@
 {
   "name": "kubernetes-ip-calculator",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Kubernetes IP address calculator for Amazon EKS, Google GKE, Azure AKS and on-premises clusters (kubeadm, Mirantis MKE, RKE2, OpenShift, Tanzu, Talos): max pods per node, VPC addresses per node, subnet per zone, pod and service ranges.",
   "license": "MIT",
   "author": "Rahul Wagh (https://jhooq.com)",

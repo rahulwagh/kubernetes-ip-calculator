@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1 - 2026-10-28
+
+- The analytics tag now loads only after a real interaction (pointer move, touch, key press, scroll) or 8 seconds of visible time, and never in automated browsers, so scrapers no longer show up in the reports. No change to the calculator.
+
 ## 1.4.0 - 2026-10-28
 
 - Fourth option: On-premises / self-managed clusters. Distribution picker (kubeadm, Mirantis Kubernetes Engine, Rancher RKE2 / k3s, Red Hat OpenShift, VMware Tanzu Kubernetes Grid, Talos Linux) with each one's documented defaults for pod CIDR, service CIDR, block per node and maxPods, and a CNI picker where the distribution allows one (Flannel, Calico, Cilium, Canal, OVN-Kubernetes, Antrea).
