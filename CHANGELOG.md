@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0 - 2026-10-28
+
+- Fourth option: On-premises / self-managed clusters. Distribution picker (kubeadm, Mirantis Kubernetes Engine, Rancher RKE2 / k3s, Red Hat OpenShift, VMware Tanzu Kubernetes Grid, Talos Linux) with each one's documented defaults for pod CIDR, service CIDR, block per node and maxPods, and a CNI picker where the distribution allows one (Flannel, Calico, Cilium, Canal, OVN-Kubernetes, Antrea).
+- Engine `onpremPlan`: nodes a pod CIDR holds (one block per node, or Calico's on-demand blocks: ceil(maxPods / block) per node), the pod cap of a block (2^(32 - mask) - 2, OpenShift's 510 for hostPrefix 23), the pod CIDR prefix needed for the planned nodes, ClusterIP count, node network sizing (nodes + control-plane VIPs + LoadBalancer pool, 3 reserved) with a given VLAN checked for fit, overlap checks between pod, service, node and corporate ranges, and distribution notes (immutable ranges, node-cidr-mask-size, Cilium mask, OpenShift hostPrefix). Every rule links to the current kube-controller-manager, kubelet, kubeadm, Flannel, Calico, Cilium, RKE2, OpenShift (OKD), Mirantis, Broadcom, Sidero and MetalLB docs; six new tests.
+- Diagram: node VLAN (nodes, VIPs, LoadBalancer pool), pod CIDR with a block per node and free slots, service CIDR outside.
+- Exports: Config tab per distribution (kubeadm ClusterConfiguration + KubeletConfiguration + CNI manifest, RKE2 config.yaml, OpenShift install-config networking + KubeletConfig, TKG variables, Talos KubeNetworkConfig / KubeFlannelCNIConfig, MKE install flags); Manifests tab with a MetalLB IPAddressPool carved from the top of the node network, an L2Advertisement and kubectl checks; Markdown table. Share link keys dt, ci, pc, sc, nm, n, q, nn, vi, lb, cr.
+- Seven on-prem presets; three FAQ entries; rules table rows; the VPC Subnet Planner hand-off is hidden for on-prem.
+
 ## 1.3.2 - 2026-10-28
 
 - Step 1 is "Cloud and network": the cloud plus the VPC CIDR (EKS) or the VNet address space (AKS, new, share link key `vn`); GKE explains that its VPC has no range of its own. The zone subnets (EKS), node and pod subnets (AKS) are now named from that block in the diagram, the ranges table and the exports (10.0.0.0/24, 10.0.1.0/24, ... or 10.50.0.0/27 and 10.50.16.0/20), and AKS gets the same fit check as EKS.

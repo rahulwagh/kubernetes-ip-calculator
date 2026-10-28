@@ -157,3 +157,48 @@ test('EKS IPv6 clusters: prefix formula, one IPv4 per node, /80 per node', () =>
   assert.equal(r.ipv6Plan.nodesPerSubnet, 65536);
   assert.ok(E.eksPlan({ type: 'm5.large', nodesPerAz: 2, azs: 2, ipFamily: 'ipv6', customNetworking: true }).items.some(i => i.k === 'bad'));
 });
+
+// ---- On-premises / self-managed
+test('on-prem kubeadm defaults: 10.244.0.0/16 with /24 per node holds 256 nodes and 254 pods per block', () => {
+  const r = E.onpremPlan({ distro: 'kubeadm', nodes: 50 });
+  assert.equal(r.pod.cidr, '10.244.0.0/16'); assert.equal(r.nodeMask, 24); assert.equal(r.cni, 'flannel');
+  assert.equal(r.capacity.nodes, 256); assert.equal(r.block.podsPerBlock, 254); assert.equal(r.maxPods, 110); assert.equal(r.effectivePods, 110);
+  assert.equal(r.services.cidr, '10.96.0.0/12'); assert.equal(r.services.count, 1048576);
+  assert.equal(r.fits, true); assert.equal(r.items.some(i => i.k === 'bad'), false);
+  assert.equal(E.onpremPlan({ distro: 'kubeadm', nodes: 300 }).fits, false);
+  assert.equal(E.onpremPlan({ distro: 'kubeadm', nodes: 300 }).requiredPrefix, 15);  // 300 x /24 -> 512 blocks -> /15
+});
+test('on-prem Calico (MKE): /26 blocks on demand, two per node at 110 pods, 512 nodes in a /16', () => {
+  const r = E.onpremPlan({ distro: 'mke', nodes: 50 });
+  assert.equal(r.cni, 'calico'); assert.equal(r.pod.cidr, '192.168.0.0/16'); assert.equal(r.nodeMask, 26);
+  assert.equal(r.block.addresses, 64); assert.equal(r.block.perNode, 2); assert.equal(r.capacity.blocks, 1024); assert.equal(r.capacity.nodes, 512);
+  assert.equal(r.services.cidr, '10.96.0.0/16');
+  assert.equal(E.onpremPlan({ distro: 'mke', nodes: 50, maxPods: 64 }).block.perNode, 1);
+});
+test('on-prem OpenShift: /14 with hostPrefix 23 is 512 nodes x 510 pods, maxPods 250', () => {
+  const r = E.onpremPlan({ distro: 'openshift', nodes: 15 });
+  assert.equal(r.cni, 'ovn'); assert.equal(r.nodeMask, 23); assert.equal(r.block.podsPerBlock, 510); assert.equal(r.capacity.nodes, 512); assert.equal(r.maxPods, 250);
+  assert.equal(r.services.cidr, '172.30.0.0/16');
+  assert.equal(E.onpremPlan({ distro: 'openshift', nodes: 15, maxPods: 300 }).items.some(i => i.src === 'ocpMaxPods'), true);
+});
+test('on-prem block limit caps the pods a node can run', () => {
+  const r = E.onpremPlan({ distro: 'kubeadm', cni: 'cilium', nodes: 10, nodeMask: 25, maxPods: 200 });
+  assert.equal(r.block.podsPerBlock, 126); assert.equal(r.effectivePods, 126); assert.equal(r.capacity.nodes, 512);
+  assert.equal(r.items.some(i => i.k === 'warn' && i.t.indexOf('126') >= 0), true);
+});
+test('on-prem overlaps: pod vs service, node network vs both, corporate ranges', () => {
+  assert.equal(E.onpremPlan({ distro: 'kubeadm', podCidr: '10.96.0.0/16', nodes: 3 }).items.some(i => i.k === 'bad' && /overlap/.test(i.t)), true);
+  const r = E.onpremPlan({ distro: 'rke2', nodes: 3, nodeNet: '10.42.1.0/24' });
+  assert.equal(r.items.some(i => i.k === 'bad' && i.t === 'node network overlaps the pod CIDR'), true);
+  assert.equal(E.onpremPlan({ distro: 'kubeadm', nodes: 3, corp: ['10.0.0.0/8'] }).items.filter(i => i.k === 'warn').length, 2);
+});
+test('on-prem node network: nodes + VIPs + MetalLB pool, 3 reserved', () => {
+  const r = E.onpremPlan({ distro: 'rke2', nodes: 20, vips: 1, lbPool: 10 });
+  assert.equal(r.vlan.need, 31); assert.equal(r.vlan.prefix, 26); assert.equal(r.vlan.usable, 61);
+  const g = E.onpremPlan({ distro: 'rke2', nodes: 20, vips: 1, lbPool: 10, nodeNet: '10.20.30.0/27' });
+  assert.equal(g.vlan.given, true); assert.equal(g.vlan.usable, 29); assert.equal(g.vlan.fits, false);
+  assert.equal(g.items.some(i => i.k === 'bad' && /too small/.test(i.t)), true);
+  assert.equal(E.onpremPlan({ distro: 'tanzu', nodes: 40 }).pod.cidr, '100.96.0.0/11');
+  assert.equal(E.onpremPlan({ distro: 'talos', cni: 'cilium', nodes: 10 }).cni, 'cilium');
+  assert.equal(E.onpremPlan({ distro: 'openshift', cni: 'cilium', nodes: 10 }).cni, 'ovn'); // no CNI choice on OpenShift here
+});

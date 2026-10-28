@@ -2,11 +2,11 @@
 
 **Live tool: https://jhooq.com/tools/kubernetes-ip-calculator/**
 
-How many IP addresses does your EKS, GKE or AKS cluster really need? Pick the cloud, the instance type or the pods per node, the node count and the zones. You get:
+How many IP addresses does your EKS, GKE, AKS or on-premises Kubernetes cluster really need? Pick the cloud, the instance type or the pods per node, the node count and the zones. You get:
 
 - the maximum pods per node and which rule set it (ENI formula, prefix delegation, managed node group cap),
 - the VPC addresses every node takes, including the warm pool the CNI keeps,
-- the subnet size per zone (EKS), the node Pod range and Pod secondary range (GKE), the node subnet and pod space (AKS),
+- the subnet size per zone (EKS), the node Pod range and Pod secondary range (GKE), the node subnet and pod space (AKS), the nodes a pod CIDR holds plus the node VLAN and MetalLB pool (on-premises: kubeadm, Mirantis MKE, RKE2, OpenShift, Tanzu, Talos),
 - a diagram of the cluster (VPC, zones, subnets, one tile per node with a square per address) drawn from the same numbers,
 - a checks list with a link to the documentation page each rule came from,
 - one click to open the result in the [VPC Subnet Planner](https://jhooq.com/tools/vpc-subnet-planner/), and Terraform, CLI and Markdown exports.
@@ -27,6 +27,11 @@ Single HTML file, no build step for users, nothing leaves the browser. The share
 | AKS, Azure CNI Overlay | 250 | one VNet address per node; pods from a /24 per node out of the pod CIDR (default 10.244.0.0/16) | [AKS IP planning](https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning) |
 | AKS, Azure CNI Pod Subnet | 110 | nodes in the node subnet, pods in a VNet pod subnet in batches of 16; pod subnet <= /16 | [AKS dynamic IP allocation](https://learn.microsoft.com/en-us/azure/aks/configure-azure-cni-dynamic-ip-allocation) |
 | AKS, Azure CNI node subnet (legacy) | 30 | `(nodes + surge) + (nodes + surge) x maxPods`, assigned up front | [AKS IP planning](https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning) |
+
+| On-premises, one block per node (Flannel, Cilium, OVN-Kubernetes, Antrea) | kubelet maxPods (default 110) capped by the block: `2^(32 - mask) - 2`; OpenShift hostPrefix 23 = 510 | one block per node from `--node-cidr-mask-size` (default 24) or the CNI; a /16 pod CIDR holds 256 nodes; nodes take one VLAN address, pods none | [kube-controller-manager](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/), [kubelet config](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/), [Flannel](https://github.com/flannel-io/flannel/blob/master/Documentation/configuration.md), [Cilium cluster-pool](https://docs.cilium.io/en/stable/network/concepts/ipam/cluster-pool/), [OpenShift CNO](https://docs.okd.io/4.19/networking/networking_operators/cluster-network-operator.html) |
+| On-premises, Calico (Mirantis MKE default) | kubelet maxPods | /26 blocks on demand, `ceil(maxPods / 64)` per node, borrowing when the pool is empty; blockSize fixed at pool creation | [Calico IPPool](https://docs.tigera.io/calico/latest/reference/resources/ippool), [MKE IP considerations](https://docs.mirantis.com/mke/3.8/install/predeployment/configure-networking/ip-considerations.html) |
+| On-premises defaults | 110 (OpenShift example 250) | kubeadm, Talos 10.244.0.0/16 + 10.96.0.0/12; RKE2/k3s 10.42.0.0/16 + 10.43.0.0/16; OpenShift 10.128.0.0/14 hostPrefix 23 + 172.30.0.0/16; MKE 192.168.0.0/16 + 10.96.0.0/16; Tanzu 100.96.0.0/11 + 100.64.0.0/13 | [kubeadm](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/), [RKE2](https://docs.rke2.io/reference/server_config), [k3s](https://docs.k3s.io/cli/server), [Tanzu](https://techdocs.broadcom.com/us/en/vmware-tanzu/standalone-components/tanzu-kubernetes-grid/2-5/tkg/config-ref.html), [Talos](https://docs.siderolabs.com/talos/v1.14/reference/configuration/kubernetes/kubenetworkconfig) |
+| On-premises node network | - | nodes + control-plane VIPs + LoadBalancer pool (MetalLB IPAddressPool in the VLAN for layer 2), 3 reserved as a planning assumption | [MetalLB](https://metallb.io/configuration/) |
 
 Reserved addresses per subnet: 5 on AWS and Azure, 4 on Google Cloud ([details](https://jhooq.com/usable-ip-addresses-subnet-aws-azure-gcp/)).
 

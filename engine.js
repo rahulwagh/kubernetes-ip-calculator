@@ -1,5 +1,5 @@
 /*
- * Kubernetes IP and node-sizing engine for EKS, GKE and AKS.
+ * Kubernetes IP and node-sizing engine for EKS, GKE, AKS and on-premises distributions (kubeadm, MKE, RKE2, OpenShift, Tanzu, Talos).
  * Pure functions, no DOM. Works in Node (module.exports) and in the browser (window.K8sIP).
  *
  * Every rule carries the official source it came from (see RULES below). Numbers that come from a
@@ -38,7 +38,19 @@
     aksOverlay: { text: 'Overlay: each node gets a /24 (256 addresses) from the pod CIDR, default 10.244.0.0/16', url: 'https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning' },
     aksPodSubnet: { text: 'Pod Subnet: IPs allocated to nodes in batches of 16, next batch when fewer than 8 remain; pod subnets up to /16', url: 'https://learn.microsoft.com/en-us/azure/aks/configure-azure-cni-dynamic-ip-allocation' },
     aksServices: { text: 'Service CIDR default 10.0.0.0/16; must not overlap the VNet', url: 'https://learn.microsoft.com/en-us/azure/aks/azure-cni-overlay' },
-    azureReserved: { text: 'Azure reserves the first four and the last address of every subnet; smallest subnet /29', url: 'https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq' },
+    azureReserved: { text: 'Azure reserves the first four and the last address of every subnet; smallest subnet /29', url: 'https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq' },    k8sNodeCidr: { text: 'kube-controller-manager --node-cidr-mask-size: default 24 for IPv4 (64 for IPv6); one pod CIDR per node is allocated from --cluster-cidr', url: 'https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/' },
+    k8sMaxPods: { text: 'kubelet maxPods default 110; podsPerCore default 0 (no per-core limit)', url: 'https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/' },
+    k8sKubeadm: { text: 'kubeadm --service-cidr default 10.96.0.0/12; --pod-network-cidr makes the control plane allocate a CIDR for every node', url: 'https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/' },
+    flannelSubnet: { text: 'Flannel SubnetLen default 24 (two less than the Network prefix when the Network is smaller than /22); kube-flannel.yml uses Network 10.244.0.0/16', url: 'https://github.com/flannel-io/flannel/blob/master/Documentation/configuration.md' },
+    calicoBlock: { text: 'Calico IPPool blockSize default 26 (64 addresses), 20 to 32, fixed when the pool is created; a host that fills its block gets another, then borrows addresses from other hosts', url: 'https://docs.tigera.io/calico/latest/reference/resources/ippool' },
+    ciliumPool: { text: 'Cilium cluster-pool IPAM: default pod CIDR 10.0.0.0/8, mask size per node 24 (immutable), 2 addresses per block reserved, minimum mask /30', url: 'https://docs.cilium.io/en/stable/network/concepts/ipam/cluster-pool/' },
+    rke2Defaults: { text: 'RKE2 defaults: cluster-cidr 10.42.0.0/16, service-cidr 10.43.0.0/16, cni canal; k3s uses the same ranges with Flannel VXLAN', url: 'https://docs.rke2.io/reference/server_config' },
+    ocpNetwork: { text: 'OpenShift defaults: clusterNetwork 10.128.0.0/14 with hostPrefix 23 (510 pod IPs per node, 2^(32-23) - 2), serviceNetwork 172.30.0.0/16, machineNetwork 10.0.0.0/16; after installation the cluster network can only be widened and hostPrefix cannot change', url: 'https://docs.okd.io/4.19/networking/networking_operators/cluster-network-operator.html' },
+    ocpMaxPods: { text: 'OpenShift KubeletConfig: podsPerCore and maxPods both apply and the lower one wins; the documented example sets podsPerCore 10 and maxPods 250', url: 'https://docs.okd.io/4.19/nodes/nodes/nodes-nodes-managing-max-pods.html' },
+    mkeDefaults: { text: 'Mirantis Kubernetes Engine: pod-cidr 192.168.0.0/16 (Calico), service-cluster-ip-range 10.96.0.0/16 (minimum /24), a static IPv4 address per node', url: 'https://docs.mirantis.com/mke/3.8/install/predeployment/configure-networking/ip-considerations.html' },
+    tkgDefaults: { text: 'Tanzu Kubernetes Grid: CLUSTER_CIDR 100.96.0.0/11, SERVICE_CIDR 100.64.0.0/13, CNI antrea by default', url: 'https://techdocs.broadcom.com/us/en/vmware-tanzu/standalone-components/tanzu-kubernetes-grid/2-5/tkg/config-ref.html' },
+    talosDefaults: { text: 'Talos Linux: KubeNetworkConfig podSubnets 10.244.0.0/16, serviceSubnets 10.96.0.0/12, nodeCIDRMaskSizeIPv4 24; Flannel with VXLAN is the default CNI', url: 'https://docs.siderolabs.com/talos/v1.14/reference/configuration/kubernetes/kubenetworkconfig' },
+    metallb: { text: 'MetalLB IPAddressPool: a CIDR or a range of addresses, in the node network for layer 2 mode, advertised through an L2Advertisement', url: 'https://metallb.io/configuration/' },
   };
 
   // ---------------------------------------------------------------- ip helpers
@@ -347,16 +359,102 @@
     };
   }
 
+  // ---------------------------------------------------------------- on-premises / self-managed
+  // The pod network is sized by the CNI, not the vendor: a block per node from the pod CIDR (kube-controller-manager
+  // --node-cidr-mask-size, Flannel SubnetLen, Cilium cluster-pool mask, OpenShift hostPrefix) or, with Calico, /26 blocks
+  // handed out on demand. The distribution only sets the defaults.
+  const ONPREM_CNIS = {
+    flannel: { label: 'Flannel', blocks: 'one', mask: 24, src: 'flannelSubnet' },
+    calico: { label: 'Calico', blocks: 'many', mask: 26, src: 'calicoBlock' },
+    cilium: { label: 'Cilium (cluster-pool IPAM)', blocks: 'one', mask: 24, src: 'ciliumPool' },
+    canal: { label: 'Canal (Flannel + Calico policy)', blocks: 'one', mask: 24, src: 'flannelSubnet' },
+    ovn: { label: 'OVN-Kubernetes', blocks: 'one', mask: 23, src: 'ocpNetwork' },
+    antrea: { label: 'Antrea', blocks: 'one', mask: 24, src: 'k8sNodeCidr' },
+  };
+  const ONPREM_DISTROS = {
+    kubeadm: { label: 'kubeadm (vanilla Kubernetes)', cni: 'flannel', cniChoice: ['flannel', 'calico', 'cilium'], podCidr: '10.244.0.0/16', svcCidr: '10.96.0.0/12', maxPods: 110, src: 'k8sKubeadm' },
+    mke: { label: 'Mirantis Kubernetes Engine (MKE)', cni: 'calico', cniChoice: null, podCidr: '192.168.0.0/16', svcCidr: '10.96.0.0/16', maxPods: 110, src: 'mkeDefaults' },
+    rke2: { label: 'Rancher RKE2 / k3s', cni: 'canal', cniChoice: ['canal', 'calico', 'cilium', 'flannel'], podCidr: '10.42.0.0/16', svcCidr: '10.43.0.0/16', maxPods: 110, src: 'rke2Defaults' },
+    openshift: { label: 'Red Hat OpenShift', cni: 'ovn', cniChoice: null, podCidr: '10.128.0.0/14', svcCidr: '172.30.0.0/16', maxPods: 250, src: 'ocpNetwork' },
+    tanzu: { label: 'VMware Tanzu Kubernetes Grid', cni: 'antrea', cniChoice: ['antrea', 'calico'], podCidr: '100.96.0.0/11', svcCidr: '100.64.0.0/13', maxPods: 110, src: 'tkgDefaults' },
+    talos: { label: 'Talos Linux', cni: 'flannel', cniChoice: ['flannel', 'cilium', 'calico'], podCidr: '10.244.0.0/16', svcCidr: '10.96.0.0/12', maxPods: 110, src: 'talosDefaults' },
+  };
+  const ONPREM_VLAN_RESERVED = 3; // network, broadcast and the gateway: a planning assumption, not a Kubernetes rule
+  function onpremPlan(o) {
+    const d = ONPREM_DISTROS[o.distro] || ONPREM_DISTROS.kubeadm;
+    const distro = ONPREM_DISTROS[o.distro] ? o.distro : 'kubeadm';
+    const cniKey = d.cniChoice && ONPREM_CNIS[o.cni] && d.cniChoice.indexOf(o.cni) >= 0 ? o.cni : d.cni;
+    const cni = ONPREM_CNIS[cniKey];
+    const items = [];
+    let pod = parseCidr(o.podCidr || d.podCidr);
+    if (!pod) { items.push({ k: 'bad', t: 'pod CIDR is not valid', d: 'Type it as address/prefix; using the ' + d.label + ' default ' + d.podCidr + ' meanwhile.' }); pod = parseCidr(d.podCidr); }
+    let svc = parseCidr(o.svcCidr || d.svcCidr);
+    if (!svc) { items.push({ k: 'bad', t: 'service CIDR is not valid', d: 'Type it as address/prefix; using the default ' + d.svcCidr + ' meanwhile.' }); svc = parseCidr(d.svcCidr); }
+    let mask = +o.nodeMask || cni.mask;
+    if (mask <= pod.prefix || mask > 30) { items.push({ k: 'bad', t: 'per-node block /' + mask + ' does not fit the pod CIDR', d: 'The block must be smaller than the pod CIDR /' + pod.prefix + ' and no smaller than /30.', src: cni.src }); mask = Math.min(30, Math.max(pod.prefix + 1, cni.mask)); }
+    const blockAddr = pow2(32 - mask);
+    const blocks = pow2(mask - pod.prefix);
+    const maxPods = o.maxPods == null || o.maxPods === '' ? d.maxPods : Math.max(1, +o.maxPods);
+    const nodes = Math.max(1, +o.nodes || 1);
+    const growth = Math.max(0, +o.growthPct || 0) / 100;
+    const nodesPlanned = Math.ceil(nodes * (1 + growth));
+    let blocksPerNode = 1, podsPerBlock = blockAddr - 2, effectivePods = maxPods;
+    if (cni.blocks === 'many') { blocksPerNode = Math.max(1, Math.ceil(maxPods / blockAddr)); podsPerBlock = blockAddr; }
+    else if (maxPods > podsPerBlock) { effectivePods = podsPerBlock; items.push({ k: 'warn', t: 'a /' + mask + ' block holds ' + podsPerBlock + ' pods, maxPods asks for ' + maxPods, d: 'The node CIDR is the hard limit: pods beyond ' + podsPerBlock + ' stay pending without an address. Use a larger block (smaller prefix) or lower maxPods.', src: cni.src }); }
+    const capacity = Math.floor(blocks / blocksPerNode);
+    const fits = nodesPlanned <= capacity;
+    const requiredPrefix = Math.max(8, mask - log2ceil(nodesPlanned * blocksPerNode));
+    if (!fits) items.push({ k: 'bad', t: pod.cidr + ' holds ' + fmtNum(capacity) + ' nodes, you plan ' + fmtNum(nodesPlanned), d: 'With ' + blocksPerNode + ' × /' + mask + ' per node the pod CIDR runs out at node ' + fmtNum(capacity + 1) + '. Use a /' + requiredPrefix + ' pod CIDR, or a smaller block per node' + (cni.blocks === 'one' ? ' (which also lowers the pods a node can run)' : '') + '.', src: cni.src });
+    else if (nodesPlanned / capacity > 0.75) items.push({ k: 'warn', t: 'pod CIDR ' + Math.round(nodesPlanned / capacity * 100) + '% used at ' + fmtNum(nodesPlanned) + ' nodes', d: fmtNum(capacity - nodesPlanned) + ' node slots left. Most distributions cannot change the pod CIDR after installation (OpenShift can only widen it); size it for the cluster you will have in three years.', src: d.src });
+    if (cni.blocks === 'many') items.push({ k: 'info', t: 'Calico hands out /' + mask + ' blocks on demand', d: 'A node that fills its ' + fmtNum(blockAddr) + '-address block gets another one; with maxPods ' + maxPods + ' plan ' + blocksPerNode + ' block' + (blocksPerNode > 1 ? 's' : '') + ' per node. When no blocks are left, nodes borrow single addresses from other nodes’ blocks, which adds host routes. blockSize is fixed when the pool is created.', src: 'calicoBlock' });
+    if (cniKey === 'cilium') items.push({ k: 'info', t: 'Cilium reserves 2 addresses per block; the mask cannot change later', d: 'cluster-pool-ipv4-mask-size is immutable; to grow, add another CIDR to clusterPoolIPv4PodCIDRList instead of editing the existing one.', src: 'ciliumPool' });
+    if (distro === 'openshift') items.push({ k: 'info', t: 'hostPrefix ' + mask + ' is fixed after installation; the cluster network can only widen', d: 'A hostPrefix of 23 provides 510 pod IPs per node (2^(32-23) - 2). You can expand clusterNetwork later, never change hostPrefix.', src: 'ocpNetwork' });
+    if (distro === 'openshift' && maxPods !== 250) items.push({ k: 'info', t: 'OpenShift pods per node: podsPerCore and maxPods both apply', d: 'The KubeletConfig example in the docs sets podsPerCore 10 and maxPods 250; the lower of the two limits a node. You plan ' + maxPods + '.', src: 'ocpMaxPods' });
+    if (distro === 'kubeadm' && mask !== 24) items.push({ k: 'info', t: 'set node-cidr-mask-size to ' + mask + ' on kube-controller-manager', d: 'kubeadm defaults to /24 per node. Pass node-cidr-mask-size through controllerManager.extraArgs in ClusterConfiguration (see the Config tab); the CNI must use the same size.', src: 'k8sNodeCidr' });
+    if (maxPods !== 110 && distro !== 'openshift') items.push({ k: 'info', t: 'kubelet maxPods default is 110', d: 'You plan ' + maxPods + ' per node. Set maxPods in KubeletConfiguration (kubeadm, Talos) or kubelet-arg max-pods (RKE2, k3s); podsPerCore 0 means no per-core limit.', src: 'k8sMaxPods' });
+    // service range
+    if (overlaps(pod, svc)) items.push({ k: 'bad', t: 'pod CIDR and service CIDR overlap', d: pod.cidr + ' and ' + svc.cidr + ' share addresses; kube-proxy and the CNI cannot tell a Service from a Pod. Pick disjoint ranges.', src: 'k8sKubeadm' });
+    // node network (VLAN): nodes + control-plane VIPs + LoadBalancer pool
+    const vips = o.vips == null || o.vips === '' ? 1 : Math.max(0, +o.vips);
+    const lbPool = Math.max(0, +o.lbPool || 0);
+    const vlanNeed = nodesPlanned + vips + lbPool;
+    const vlanSuggest = prefixFor(vlanNeed, ONPREM_VLAN_RESERVED, 29, 8);
+    let vlan = { given: false, need: vlanNeed, vips, lbPool, prefix: vlanSuggest.prefix, usable: vlanSuggest.usable, fits: true, reserved: ONPREM_VLAN_RESERVED };
+    const nn = o.nodeNet ? parseCidr(o.nodeNet) : null;
+    if (o.nodeNet && !nn) items.push({ k: 'warn', t: 'node network CIDR is not valid', d: 'Type the VLAN as address/prefix, for example 10.20.30.0/24. Showing the size you would need instead.' });
+    if (nn) {
+      const usable = nn.size - ONPREM_VLAN_RESERVED;
+      vlan = { given: true, cidr: nn.cidr, need: vlanNeed, vips, lbPool, prefix: nn.prefix, usable, fits: usable >= vlanNeed, reserved: ONPREM_VLAN_RESERVED, suggested: vlanSuggest.prefix };
+      if (!vlan.fits) items.push({ k: 'bad', t: 'node network ' + nn.cidr + ' is too small', d: fmtNum(nodesPlanned) + ' nodes + ' + vips + ' VIP' + (vips === 1 ? '' : 's') + ' + ' + fmtNum(lbPool) + ' load-balancer addresses need ' + fmtNum(vlanNeed) + ', the VLAN has ' + fmtNum(usable) + ' usable (' + ONPREM_VLAN_RESERVED + ' reserved for network, broadcast and gateway). A /' + vlanSuggest.prefix + ' would do.', src: 'metallb' });
+      if (overlaps(nn, pod)) items.push({ k: 'bad', t: 'node network overlaps the pod CIDR', d: nn.cidr + ' and ' + pod.cidr + ' share addresses. Cilium, Flannel and OVN route pod traffic by these ranges; the overlap breaks node-to-pod traffic. Move the pod CIDR.', src: 'ciliumPool' });
+      if (overlaps(nn, svc)) items.push({ k: 'bad', t: 'node network overlaps the service CIDR', d: nn.cidr + ' and ' + svc.cidr + ' share addresses; ClusterIP traffic would be routed to the VLAN. Pick a disjoint service CIDR.', src: 'k8sKubeadm' });
+    }
+    if (lbPool > 0) items.push({ k: 'info', t: fmtNum(lbPool) + ' LoadBalancer addresses from the node network', d: 'On-premises there is no cloud load balancer: MetalLB (or kube-vip) answers for a pool of VLAN addresses. In layer 2 mode the pool must be in the node network; reserve those addresses in your IPAM so DHCP never hands them out.', src: 'metallb' });
+    // corporate ranges to keep clear of
+    for (const c of (o.corp || [])) { const cc = parseCidr(c); if (!cc) continue; if (overlaps(cc, pod)) items.push({ k: 'warn', t: 'pod CIDR overlaps ' + cc.cidr, d: 'Pods cannot reach that network: the CNI routes it locally. Pick a pod CIDR your routed networks do not use.', src: 'ciliumPool' }); if (overlaps(cc, svc)) items.push({ k: 'warn', t: 'service CIDR overlaps ' + cc.cidr, d: 'Traffic to that network would be captured by kube-proxy. Pick a service CIDR your routed networks do not use.', src: 'k8sKubeadm' }); }
+    const rules = ['k8sNodeCidr', 'k8sMaxPods', d.src, cni.src, 'metallb'].filter((v, i, a) => a.indexOf(v) === i);
+    return {
+      cloud: 'onprem', distro, distroLabel: d.label, cni: cniKey, cniLabel: cni.label, cniChoice: d.cniChoice, blocksMode: cni.blocks,
+      pod: { cidr: pod.cidr, prefix: pod.prefix, size: pod.size }, nodeMask: mask,
+      block: { prefix: mask, addresses: blockAddr, perNode: blocksPerNode, podsPerBlock },
+      nodes, nodesPlanned, capacity: { nodes: capacity, blocks }, fits, requiredPrefix, maxPods, effectivePods,
+      services: { cidr: svc.cidr, prefix: svc.prefix, count: svc.size },
+      vlan, totals: { pods: nodesPlanned * effectivePods, blocksUsed: nodesPlanned * blocksPerNode },
+      items, rules,
+    };
+  }
+
   function plan(cloud, o) {
     if (cloud === 'eks') return eksPlan(o);
     if (cloud === 'gke') return gkePlan(o);
     if (cloud === 'aks') return aksPlan(o);
+    if (cloud === 'onprem') return onpremPlan(o);
     return { error: 'unknown cloud ' + cloud };
   }
 
   return {
     RULES, AKS_MODES, ip2n, n2ip, parseCidr, overlaps, within, prefixFor, log2ceil,
     loadEks, eksInstance, eksInstanceTypes, eksCap, eksMaxPods, eksPerNodeIps, eksServiceCidrCheck, eksPlan,
-    gkeNodeRangePrefix, gkePlan, aksPlan, plan,
+    gkeNodeRangePrefix, gkePlan, aksPlan, ONPREM_CNIS, ONPREM_DISTROS, onpremPlan, plan,
   };
 }));
